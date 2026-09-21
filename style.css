@@ -17,3 +17,11 @@ th {
         font-size: 14px;
     }
 }
+
+.field-subject {
+    font-size: 1em;
+}
+
+.field-sub {
+    font-size: 0.5em;
+}

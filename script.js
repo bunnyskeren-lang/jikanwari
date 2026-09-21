@@ -32,22 +32,21 @@ function renderPeriodTimeInputs(times) {
 }
 function buildCell(year, quarter, day, period) {
     const td = document.createElement('td');
-        FIELDS.forEach((field) => {
-            const div = document.createElement('div');
-            div.contentEditable = 'true';
-            div.className = field === 'subject' ? 'field-subject' : 'field-sub';
-            const key = `cell-${year}-${quarter}-${day}-${period}-${field}`;
-            const saved = localStorage.getItem(key);
-            if (saved) {
+    FIELDS.forEach((field) => {
+        const div = document.createElement('div');
+        div.contentEditable = 'true';
+        div.className = field === 'subject' ? 'field-subject' : 'field-sub';
+        const key = `cell-${year}-${quarter}-${day}-${period}-${field}`;
+        const saved = localStorage.getItem(key);
+        if (saved) {
             div.textContent = saved;
-            div.addEventListener('input', () => {
+        }
+        div.addEventListener('input', () => {
             localStorage.setItem(key, div.textContent);
-                    td.appendChild(div);
-    });
-
-    return td;
-}
         });
+        td.appendChild(div);
+    });
+    return td;
 }
 function buildQuarterTable(year, quarter, times) {
     const table = document.createElement('table');
