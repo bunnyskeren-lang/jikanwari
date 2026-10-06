@@ -43,16 +43,17 @@ function buildCell(year, quarter, day, period) {
         }
         div.addEventListener('input', () => {
             localStorage.setItem(key, div.textContent);
+            if (field === 'subject') renderSummary();
         });
         td.appendChild(div);
     });
     const btn = document.createElement('button');
     btn.textContent = '⚙';
     btn.addEventListener('click', () => {
-    const name = td.querySelector('.field-subject').textContent.trim();
-    if (name) openSubjectDialog(name);
-});
-td.appendChild(btn);
+        const name = td.querySelector('.field-subject').textContent.trim();
+        if (name) openSubjectDialog(name);
+    });
+    td.appendChild(btn);
     return td;
 }
 function buildQuarterTable(year, quarter, times) {
@@ -160,8 +161,53 @@ document.getElementById('dialog-save').addEventListener('click', () => {
         credits: Number(document.getElementById('dialog-credits').value)
     };
     saveSubjects(subjects);
+    renderSummary();
     document.getElementById('subject-dialog').close();
 });
 document.getElementById('dialog-cancel').addEventListener('click', () => {
     document.getElementById('subject-dialog').close();
 });
+
+function collectSubjectNames() {
+    const names = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('cell-') && key.endsWith('-subject')) {
+            const name = localStorage.getItem(key).trim();
+            if (name) names.add(name);
+        }
+    }
+    return names;
+}
+
+function calcTotals() {
+    const totals = {};
+    collectSubjectNames().forEach((name) => {
+        const info = subjects[name];
+        const label = info ? `${info.major}・${info.minor}` : '未分類';
+        const credits = info ? info.credits : 1;
+        totals[label] = (totals[label] || 0) + credits;
+    });
+    return totals;
+}
+
+function renderSummary() {
+    const container = document.getElementById('summary');
+    container.innerHTML = '';
+
+    const totals = calcTotals();
+    let sum = 0;
+    Object.keys(totals).forEach((label) => {
+        const p = document.createElement('p');
+        p.textContent = `${label}: ${totals[label]}単位`;
+        container.appendChild(p);
+        sum += totals[label];
+    });
+
+    const total = document.createElement('p');
+    total.textContent = `合計: ${sum}単位`;
+    container.appendChild(total);
+}
+
+renderSummary();
+
