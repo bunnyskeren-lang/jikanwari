@@ -6,7 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
+<dialog id="subject-dialog">
+    <h3 id="dialog-title"></h3>
+    <select id="dialog-major"></select>
+    <select id="dialog-minor"></select>
+    <input id="dialog-credits" type="number" min="0" step="0.5" value="1">
+    <button id="dialog-save">保存</button>
+    <button id="dialog-cancel">閉じる</button>
+</dialog>
     <h1>私の時間割</h1>
 <div id="period-time-inputs"></div>
 <div id="timetables"></div>

@@ -46,6 +46,13 @@ function buildCell(year, quarter, day, period) {
         });
         td.appendChild(div);
     });
+    const btn = document.createElement('button');
+    btn.textContent = '⚙';
+    btn.addEventListener('click', () => {
+    const name = td.querySelector('.field-subject').textContent.trim();
+    if (name) openSubjectDialog(name);
+});
+td.appendChild(btn);
     return td;
 }
 function buildQuarterTable(year, quarter, times) {
@@ -96,3 +103,65 @@ function renderTimetables(times) {
 const periodTimes = loadPeriodTimes();
 renderPeriodTimeInputs(periodTimes);
 renderTimetables(periodTimes);
+
+const CATEGORIES = {
+    '専門':['共通専門','必修','選択必修','その他'],
+    '教養':['人文社会','総合系']
+};
+
+function loadSubjects() {
+    const saved = localStorage.getItem('subjects');
+    return saved ? JSON.parse(saved) : {};
+}
+function saveSubjects(subjects) {
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+}
+const subjects = loadSubjects();
+
+const majorSelect = document.getElementById('dialog-major');
+const minorSelect = document.getElementById('dialog-minor');
+
+function fillOptions(select, items) {
+    select.innerHTML = '';
+    items.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = item;
+        select.appendChild(option);
+    });
+}
+
+fillOptions(majorSelect, Object.keys(CATEGORIES));
+majorSelect.addEventListener('change', () => {
+    fillOptions(minorSelect, CATEGORIES[majorSelect.value]);
+});
+
+let editingSubject = null;   // いま編集中の科目名
+
+function openSubjectDialog(name) {
+    editingSubject = name;
+    document.getElementById('dialog-title').textContent = name;
+
+    const info = subjects[name] || { major: '専門', minor: '共通専門', credits: 1 };
+    majorSelect.value = info.major;
+    fillOptions(minorSelect, CATEGORIES[info.major]);
+    minorSelect.value = info.minor;
+    document.getElementById('dialog-credits').value = info.credits;
+
+    document.getElementById('subject-dialog').showModal();
+}
+
+
+
+document.getElementById('dialog-save').addEventListener('click', () => {
+    subjects[editingSubject] = {
+        major: majorSelect.value,
+        minor: minorSelect.value,
+        credits: Number(document.getElementById('dialog-credits').value)
+    };
+    saveSubjects(subjects);
+    document.getElementById('subject-dialog').close();
+});
+document.getElementById('dialog-cancel').addEventListener('click', () => {
+    document.getElementById('subject-dialog').close();
+});
