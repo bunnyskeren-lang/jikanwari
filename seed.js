@@ -136,6 +136,14 @@ const SEED_CELLS = [
     {"year":1,"quarter":3,"day":"時間外","period":2,"subject":"Academic English Literacy A1","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":4,"day":"時間外","period":1,"subject":"Academic English Communication A2","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":4,"day":"時間外","period":2,"subject":"Academic English Literacy A2","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":1,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":1,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":2,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":2,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":3,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":3,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":4,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":4,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
 ];
 
 const SEED_SUBJECTS = {
@@ -221,4 +229,5 @@ const SEED_SUBJECTS = {
     'Academic English Literacy A1': { major: '教養', minor: '外国語', credits: 0.5 },
     'Academic English Communication A2': { major: '教養', minor: '外国語', credits: 0.5 },
     'Academic English Literacy A2': { major: '教養', minor: '外国語', credits: 0.5 },
+    '起業部': { major: '予定', minor: '部活', credits: 0 },
 };

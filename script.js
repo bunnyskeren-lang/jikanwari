@@ -154,6 +154,21 @@ function migrateV3() {
 }
 migrateV3();
 
+// 1年の月曜・木曜の放課後に起業部を入れる(空いているコマのみ・一度だけ)
+function migrateV4() {
+    if (localStorage.getItem('migratedV4')) return;
+    SEED_CELLS.filter((cell) => cell.subject === '起業部').forEach((cell) => {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        if ((localStorage.getItem(prefix + 'subject') || '').trim()) return;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    if (!subjects['起業部']) subjects['起業部'] = SEED_SUBJECTS['起業部'];
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV4', '1');
+}
+migrateV4();
+
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
     return saved ? JSON.parse(saved) : {};
