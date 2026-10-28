@@ -16,6 +16,7 @@
     --c-liberal: #fff0d9;  --c-liberal-bar: #e0912a;
     --c-general: #fbe4f1;  --c-general-bar: #c8559a;
     --c-language: #d7f3f1; --c-language-bar: #1f9e95;
+    --c-plan: #f1ece4;     --c-plan-bar: #8a6a3f;
     --c-none: #eceff3;     --c-none-bar: #9aa3af;
 }
 @media (prefers-color-scheme: dark) {
@@ -37,12 +38,16 @@
         --c-liberal: #45351c;
         --c-general: #45233a;
         --c-language: #17403d;
+        --c-plan: #3a3226;
         --c-none: #2a2f39;
     }
 }
 
 * {
     box-sizing: border-box;
+}
+[hidden] {
+    display: none !important;
 }
 body {
     margin: 0;
@@ -214,7 +219,58 @@ td.today .cell.empty {
 .cat-liberal  { background: var(--c-liberal);  border-left-color: var(--c-liberal-bar); }
 .cat-general  { background: var(--c-general);  border-left-color: var(--c-general-bar); }
 .cat-language { background: var(--c-language); border-left-color: var(--c-language-bar); }
+.cat-plan     { background: var(--c-plan);     border-left-color: var(--c-plan-bar); }
 .cat-none     { background: var(--c-none);     border-left-color: var(--c-none-bar); }
+
+/* 時間外(オンデマンドなど) */
+#extra {
+    margin: 12px 3px 0;
+}
+#extra h2 {
+    font-size: 14px;
+    margin: 0 0 6px;
+}
+#extra h2 small {
+    font-size: 11px;
+    font-weight: normal;
+    color: var(--muted);
+    margin-left: 4px;
+}
+#extra-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.extra-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 8px;
+    padding: 8px 10px;
+    text-align: left;
+    cursor: pointer;
+}
+.extra-subject {
+    font-size: 13px;
+    font-weight: bold;
+}
+.extra-sub {
+    font-size: 11px;
+    color: var(--muted);
+}
+.add-button {
+    width: 100%;
+    padding: 10px 0;
+    border: 1px dashed var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--accent);
+    font-size: 14px;
+}
 
 .hint {
     text-align: center;
@@ -274,6 +330,19 @@ dialog select {
     border-radius: 8px;
     background: var(--bg);
     color: var(--text);
+}
+dialog label.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text);
+}
+dialog label.check input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    flex: none;
 }
 dialog .row {
     display: flex;

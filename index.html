@@ -26,6 +26,11 @@
 
 <main id="main">
     <table id="timetable"></table>
+    <section id="extra">
+        <h2>時間外 <small>オンデマンドなど曜日・時限のない授業</small></h2>
+        <div id="extra-list"></div>
+        <button id="extra-add" class="add-button">＋ 時間外に追加</button>
+    </section>
     <p class="hint">コマをタップして編集 ・ 左右にスワイプでクォーター切替</p>
     <div id="legend"></div>
 </main>
@@ -44,9 +49,13 @@
         <div class="row">
             <label>区分<select id="dialog-major"></select></label>
             <label>分類<select id="dialog-minor"></select></label>
-            <label class="credits">単位<input id="dialog-credits" type="number" min="0" step="0.5" inputmode="decimal"></label>
+            <label class="credits" id="dialog-credits-label">単位<input id="dialog-credits" type="number" min="0" step="0.5" inputmode="decimal"></label>
         </div>
-        <p class="note">区分と単位は同じ科目名のコマすべてに反映されます</p>
+        <label class="check" id="dialog-all-quarters-label">
+            <input id="dialog-all-quarters" type="checkbox">
+            この学年の1Q〜4Qすべてに入れる（空いているコマのみ）
+        </label>
+        <p class="note" id="dialog-note">区分と単位は同じ科目名のコマすべてに反映されます</p>
         <div class="dialog-buttons">
             <button type="button" id="dialog-clear" class="danger">空にする</button>
             <button type="button" id="dialog-cancel">閉じる</button>

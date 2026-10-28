@@ -1,5 +1,5 @@
 // 機械工学科の時間割（2026年度 工学部時間割表 1Q〜4Q・学籍番号奇数）
-// 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)は教養教育院の2026年度時間割による
+// 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)・時間外のAcademic English(遠隔クラス)は教養教育院の2026年度時間割による
 // 単位数と区分は 2026 学生便覧 別表第1ホ（機械工学科）による
 const SEED_CELLS = [
     {"year":1,"quarter":1,"day":"火","period":1,"subject":"微分積分1","teacher":"桔梗","room":"B109"},
@@ -12,11 +12,9 @@ const SEED_CELLS = [
     {"year":1,"quarter":1,"day":"木","period":3,"subject":"機械基礎数学Ⅰ","teacher":"神野・肥田","room":"LR401"},
     {"year":1,"quarter":1,"day":"金","period":3,"subject":"機械製図Ⅰ","teacher":"西田・横田・上杉","room":"3E-304"},
     {"year":1,"quarter":1,"day":"金","period":4,"subject":"機械製図Ⅰ","teacher":"西田・横田・上杉","room":"3E-304"},
-    {"year":1,"quarter":2,"day":"月","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
     {"year":1,"quarter":2,"day":"火","period":1,"subject":"微分積分2","teacher":"桔梗","room":"B109"},
     {"year":1,"quarter":2,"day":"火","period":2,"subject":"フランス語初級A2","teacher":"馬場","room":"K603"},
     {"year":1,"quarter":2,"day":"火","period":3,"subject":"機械基礎数学Ⅱ","teacher":"今井・田崎","room":"LR501"},
-    {"year":1,"quarter":2,"day":"水","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
     {"year":1,"quarter":2,"day":"水","period":4,"subject":"基礎力学Ⅰ","teacher":"塩澤","room":"鶴甲B110"},
     {"year":1,"quarter":2,"day":"木","period":1,"subject":"フランス語初級B2","teacher":"武内","room":"D509"},
     {"year":1,"quarter":2,"day":"木","period":2,"subject":"線形代数2","teacher":"高坂","room":"B209"},
@@ -134,6 +132,10 @@ const SEED_CELLS = [
     {"year":3,"quarter":4,"day":"木","period":2,"subject":"生産システム工学","teacher":"鈴木","room":"5W-301"},
     {"year":3,"quarter":4,"day":"木","period":4,"subject":"先端機械工学詳論","teacher":"全教員","room":"C3-302"},
     {"year":3,"quarter":4,"day":"金","period":4,"subject":"安全工学・工学倫理Ⅱ","teacher":"伊藤","room":"5W-301"},
+    {"year":1,"quarter":3,"day":"時間外","period":1,"subject":"Academic English Communication A1","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":3,"day":"時間外","period":2,"subject":"Academic English Literacy A1","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":4,"day":"時間外","period":1,"subject":"Academic English Communication A2","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":4,"day":"時間外","period":2,"subject":"Academic English Literacy A2","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
 ];
 
 const SEED_SUBJECTS = {
@@ -215,4 +217,8 @@ const SEED_SUBJECTS = {
     'フランス語初級B3': { major: '教養', minor: '外国語', credits: 0.5 },
     'フランス語初級A4': { major: '教養', minor: '外国語', credits: 0.5 },
     'フランス語初級B4': { major: '教養', minor: '外国語', credits: 0.5 },
+    'Academic English Communication A1': { major: '教養', minor: '外国語', credits: 0.5 },
+    'Academic English Literacy A1': { major: '教養', minor: '外国語', credits: 0.5 },
+    'Academic English Communication A2': { major: '教養', minor: '外国語', credits: 0.5 },
+    'Academic English Literacy A2': { major: '教養', minor: '外国語', credits: 0.5 },
 };

@@ -14,8 +14,10 @@ const FIELDS = ['subject', 'room', 'teacher'];
 
 const CATEGORIES = {
     '専門': ['共通専門', '必修', '選択必修', 'その他'],
-    '教養': ['人文社会', '総合系', '外国語']
+    '教養': ['人文社会', '総合系', '外国語'],
+    '予定': ['部活', 'アルバイト', 'その他']   // 授業以外の予定(単位には数えない)
 };
+const EXTRA_DAY = '時間外';   // オンデマンドなど曜日・時限のない授業
 // 分類ごとの色(style.css の .cat-xxx)
 const CATEGORY_CLASS = {
     '共通専門': 'cat-common',
@@ -105,6 +107,53 @@ function migrateV2() {
 }
 migrateV2();
 
+// 時間外の授業は cell-{学年}-{Q}-時間外-{番号}-{項目} に保存する
+function extraEntries(year, quarter) {
+    const prefix = `cell-${year}-${quarter}-${EXTRA_DAY}-`;
+    const entries = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key.startsWith(prefix) || !key.endsWith('-subject')) continue;
+        const subject = (localStorage.getItem(key) || '').trim();
+        if (subject) entries.push({ period: Number(key.slice(prefix.length, -'-subject'.length)), subject });
+    }
+    return entries.sort((a, b) => a.period - b.period);
+}
+function nextExtraPeriod(year, quarter) {
+    const entries = extraEntries(year, quarter);
+    return entries.length ? entries[entries.length - 1].period + 1 : 1;
+}
+
+// 保存済みのデータを直す(一度だけ)
+// ・1年の物理学概論Ⅰ(機械工学科の時間割表から入れたもの)は履修しないので消す
+// ・時間外にオンデマンドの Academic English を入れる
+function migrateV3() {
+    if (localStorage.getItem('migratedV3')) return;
+    QUARTERS.forEach((quarter) => {
+        DAYS.forEach((day) => {
+            PERIODS.forEach((period) => {
+                const prefix = `cell-1-${quarter}-${day}-${period}-`;
+                if (localStorage.getItem(prefix + 'subject') === '物理学概論Ⅰ'
+                    && localStorage.getItem(prefix + 'teacher') === '田中（克）') {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+    });
+    SEED_CELLS.filter((cell) => cell.day === EXTRA_DAY).forEach((cell) => {
+        if (extraEntries(cell.year, cell.quarter).some((e) => e.subject === cell.subject)) return;
+        const prefix = `cell-${cell.year}-${cell.quarter}-${EXTRA_DAY}-${nextExtraPeriod(cell.year, cell.quarter)}-`;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    Object.keys(SEED_SUBJECTS).forEach((name) => {
+        if (!subjects[name]) subjects[name] = SEED_SUBJECTS[name];
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV3', '1');
+}
+migrateV3();
+
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
     return saved ? JSON.parse(saved) : {};
@@ -167,6 +216,13 @@ function makeTab(label, active, onClick) {
     return btn;
 }
 
+function categoryClass(name) {
+    const info = subjects[name];
+    if (!info) return 'cat-none';
+    if (info.major === '予定') return 'cat-plan';
+    return CATEGORY_CLASS[info.minor] || 'cat-other';
+}
+
 function buildCell(year, quarter, day, period) {
     const td = document.createElement('td');
     const cell = readCell(year, quarter, day, period);
@@ -174,8 +230,7 @@ function buildCell(year, quarter, day, period) {
     btn.className = 'cell';
     btn.setAttribute('aria-label', `${day}曜${period}${typeof period === 'number' ? '限' : ''} ${cell.subject || '空き'}`);
     if (cell.subject) {
-        const info = subjects[cell.subject];
-        btn.classList.add(info ? CATEGORY_CLASS[info.minor] || 'cat-other' : 'cat-none');
+        btn.classList.add(categoryClass(cell.subject));
         const name = document.createElement('span');
         name.className = 'cell-subject';
         // 「線形代数3」の数字だけが次の行に送られないよう、末尾の番号は直前の1文字とくっつける
@@ -242,7 +297,32 @@ function renderTimetable() {
         });
         table.appendChild(tr);
     });
+
+    renderExtra();
 }
+
+function renderExtra() {
+    const list = document.getElementById('extra-list');
+    list.innerHTML = '';
+    extraEntries(view.year, view.quarter).forEach((entry) => {
+        const cell = readCell(view.year, view.quarter, EXTRA_DAY, entry.period);
+        const btn = document.createElement('button');
+        btn.className = `extra-item ${categoryClass(cell.subject)}`;
+        const name = document.createElement('span');
+        name.className = 'extra-subject';
+        name.textContent = cell.subject;
+        const sub = document.createElement('span');
+        sub.className = 'extra-sub';
+        sub.textContent = [cell.teacher, cell.room].filter((s) => s).join(' ・ ');
+        btn.appendChild(name);
+        btn.appendChild(sub);
+        btn.addEventListener('click', () => openCellDialog(view.year, view.quarter, EXTRA_DAY, entry.period));
+        list.appendChild(btn);
+    });
+}
+document.getElementById('extra-add').addEventListener('click', () => {
+    openCellDialog(view.year, view.quarter, EXTRA_DAY, nextExtraPeriod(view.year, view.quarter));
+});
 
 // 編集ダイアログ
 const dialog = document.getElementById('cell-dialog');
@@ -252,7 +332,17 @@ const teacherInput = document.getElementById('dialog-teacher');
 const majorSelect = document.getElementById('dialog-major');
 const minorSelect = document.getElementById('dialog-minor');
 const creditsInput = document.getElementById('dialog-credits');
+const allQuartersInput = document.getElementById('dialog-all-quarters');
 let editing = null;   // いま編集中のコマ { year, quarter, day, period }
+
+// 予定は単位を数えないので単位欄を隠す
+function updateCreditsVisibility() {
+    const isPlan = majorSelect.value === '予定';
+    document.getElementById('dialog-credits-label').hidden = isPlan;
+    document.getElementById('dialog-note').textContent = isPlan
+        ? '予定は単位の合計には入りません'
+        : '区分と単位は同じ科目名のコマすべてに反映されます';
+}
 
 function fillOptions(select, items) {
     select.innerHTML = '';
@@ -266,14 +356,16 @@ function fillOptions(select, items) {
 fillOptions(majorSelect, Object.keys(CATEGORIES));
 majorSelect.addEventListener('change', () => {
     fillOptions(minorSelect, CATEGORIES[majorSelect.value]);
+    updateCreditsVisibility();
 });
 
-function showSubjectInfo(name) {
-    const info = subjects[name] || { major: '専門', minor: '共通専門', credits: 1 };
+function showSubjectInfo(name, defaults) {
+    const info = subjects[name] || defaults || { major: '専門', minor: '共通専門', credits: 1 };
     majorSelect.value = info.major;
     fillOptions(minorSelect, CATEGORIES[info.major]);
     minorSelect.value = info.minor;
     creditsInput.value = info.credits;
+    updateCreditsVisibility();
 }
 // 登録済みの科目名を選んだら区分・単位も合わせる
 subjectInput.addEventListener('change', () => {
@@ -294,28 +386,45 @@ function fillSubjectList() {
 function openCellDialog(year, quarter, day, period) {
     editing = { year, quarter, day, period };
     const cell = readCell(year, quarter, day, period);
+    const isExtra = day === EXTRA_DAY;
     const periodLabel = typeof period === 'number' ? `${period}限` : period;
-    document.getElementById('dialog-slot').textContent = `${year}年 ${quarter}Q ・ ${day}曜 ${periodLabel}`;
+    document.getElementById('dialog-slot').textContent = isExtra
+        ? `${year}年 ${quarter}Q ・ 時間外`
+        : `${year}年 ${quarter}Q ・ ${day}曜 ${periodLabel}`;
     subjectInput.value = cell.subject;
     roomInput.value = cell.room;
     teacherInput.value = cell.teacher;
-    showSubjectInfo(cell.subject);
+    // 放課後の空きコマは部活などの予定を入れることが多いので、予定を初期値にする
+    const defaults = period === '放課後' ? { major: '予定', minor: '部活', credits: 0 } : null;
+    showSubjectInfo(cell.subject, defaults);
+    allQuartersInput.checked = false;
+    document.getElementById('dialog-all-quarters-label').hidden = isExtra;
     fillSubjectList();
     dialog.showModal();
+}
+
+function saveCell(year, quarter, day, period, values) {
+    FIELDS.forEach((field) => {
+        localStorage.setItem(cellKey(year, quarter, day, period, field), values[field].trim());
+    });
 }
 
 document.getElementById('cell-form').addEventListener('submit', () => {
     const { year, quarter, day, period } = editing;
     const values = { subject: subjectInput.value, room: roomInput.value, teacher: teacherInput.value };
-    FIELDS.forEach((field) => {
-        localStorage.setItem(cellKey(year, quarter, day, period, field), values[field].trim());
-    });
+    saveCell(year, quarter, day, period, values);
+    // 同じ学年の他のクォーターの、同じ曜日・時限の空きコマにも入れる
+    if (allQuartersInput.checked && day !== EXTRA_DAY) {
+        QUARTERS.forEach((q) => {
+            if (q !== quarter && !readCell(year, q, day, period).subject) saveCell(year, q, day, period, values);
+        });
+    }
     const name = values.subject.trim();
     if (name) {
         subjects[name] = {
             major: majorSelect.value,
             minor: minorSelect.value,
-            credits: Number(creditsInput.value)
+            credits: majorSelect.value === '予定' ? 0 : Number(creditsInput.value)
         };
         saveSubjects(subjects);
     }
@@ -354,6 +463,7 @@ function calcTotals() {
     const totals = {};
     collectSubjectNames().forEach((name) => {
         const info = subjects[name];
+        if (info && info.major === '予定') return;
         const label = info ? `${info.major}・${info.minor}` : '未分類';
         const credits = info ? info.credits : 1;
         totals[label] = (totals[label] || 0) + credits;
@@ -398,6 +508,10 @@ function renderLegend() {
         item.textContent = minor;
         legend.appendChild(item);
     });
+    const plan = document.createElement('span');
+    plan.className = 'legend-item cat-plan';
+    plan.textContent = '予定';
+    legend.appendChild(plan);
 }
 
 // 左右スワイプでクォーターを切り替える(4Qの次は次の学年の1Q)
