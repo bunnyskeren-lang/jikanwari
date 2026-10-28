@@ -237,7 +237,7 @@ h1 {
     color: var(--muted);
 }
 
-/* 1行分の要件 */
+/* 1行分の要件(印・項目名・数字を左に続けて並べる) */
 .req-row {
     padding: 8px 0;
     border-bottom: 1px solid var(--line);
@@ -256,33 +256,46 @@ h1 {
     padding-left: 8px;
     border-left: 2px solid var(--line);
 }
-.req-top {
+.req-line {
+    position: relative;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 2px 8px;
+    padding-left: calc(1em + 8px);
+}
+/* 印は左に固定し、折り返した数字も項目名と同じ位置から始める */
+.req-icon {
+    position: absolute;
+    left: 0;
+    width: 1em;
+    font-size: 14px;
+    font-weight: bold;
+    color: #c2660a;
+}
+.req-row.done .req-icon {
+    color: var(--c-elective-bar);
 }
 .req-label {
     font-size: 14px;
 }
-.req-badge {
-    flex: none;
-    font-size: 13px;
+.req-value {
+    font-size: 14px;
     font-weight: bold;
-    color: #c2660a;
+    white-space: nowrap;
 }
-.req-row.done .req-badge {
+.req-row.done .req-value {
     color: var(--c-elective-bar);
-    font-size: 16px;
 }
-.req-bottom {
+.req-sub {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-top: 5px;
+    margin: 4px 0 0 calc(1em + 8px);
 }
 .req-bar {
-    flex: 1;
+    flex: none;
+    width: 110px;
     height: 6px;
     border-radius: 3px;
     background: var(--line);
@@ -290,21 +303,30 @@ h1 {
 }
 .req-bar div {
     height: 100%;
-    background: var(--accent);
+    background: #c2660a;
 }
 .req-row.done .req-bar div {
     background: var(--c-elective-bar);
 }
-.req-value {
-    flex: none;
-    min-width: 54px;
-    text-align: right;
+.req-badge {
     font-size: 12px;
-    color: var(--muted);
+    font-weight: bold;
+    color: #c2660a;
 }
+.req-row.over .req-icon,
+.req-row.over .req-value,
 .req-row.over .req-badge,
 .req-row.over .req-note {
     color: var(--danger);
+}
+.req-row.over .req-bar div {
+    background: var(--danger);
+}
+.req-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 4px 0 0 calc(1em + 8px);
+    line-height: 1.5;
 }
 .req-row.over .req-bar div {
     background: var(--danger);

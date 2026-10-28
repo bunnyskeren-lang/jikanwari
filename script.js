@@ -1039,36 +1039,44 @@ function requiredNamesUpTo(maxYear) {
     return [...new Set(names)];
 }
 
-// 1行分: 左に項目名、右に「✓」か「あと○単位」、下に進み具合のバーと「取った / 必要」
+// 1行分: 左から「✓/●」「項目名」「取った / 必要」を続けて並べ、その下に短いバーと「あと○単位」を出す
+// (左右の端に分けると視線が行き来して読みにくいので、すべて左に寄せる)
 function makeRequirementRow(row) {
     const unit = row.unit || '単位';
     const done = row.value >= row.need;
     const div = document.createElement('div');
     div.className = `req-row depth-${row.depth || 0}${done ? ' done' : ''}`;
-    const top = document.createElement('div');
-    top.className = 'req-top';
+
+    const line = document.createElement('div');
+    line.className = 'req-line';
+    const icon = document.createElement('span');
+    icon.className = 'req-icon';
+    icon.textContent = done ? '✓' : '●';
     const label = document.createElement('span');
     label.className = 'req-label';
     label.textContent = row.label;
-    const badge = document.createElement('span');
-    badge.className = 'req-badge';
-    badge.textContent = done ? '✓' : `あと${row.need - row.value}${unit}`;
-    top.appendChild(label);
-    top.appendChild(badge);
-    div.appendChild(top);
-    const bottom = document.createElement('div');
-    bottom.className = 'req-bottom';
+    const value = document.createElement('span');
+    value.className = 'req-value';
+    value.textContent = `${row.value} / ${row.need}${unit}`;
+    line.appendChild(icon);
+    line.appendChild(label);
+    line.appendChild(value);
+    div.appendChild(line);
+
+    const sub = document.createElement('div');
+    sub.className = 'req-sub';
     const bar = document.createElement('div');
     bar.className = 'req-bar';
     const fill = document.createElement('div');
     fill.style.width = `${Math.min(100, (row.value / row.need) * 100)}%`;
     bar.appendChild(fill);
-    const value = document.createElement('span');
-    value.className = 'req-value';
-    value.textContent = `${row.value} / ${row.need}`;
-    bottom.appendChild(bar);
-    bottom.appendChild(value);
-    div.appendChild(bottom);
+    const badge = document.createElement('span');
+    badge.className = 'req-badge';
+    badge.textContent = done ? '' : `あと${row.need - row.value}${unit}`;
+    sub.appendChild(bar);
+    sub.appendChild(badge);
+    div.appendChild(sub);
+
     if (row.note) {
         const note = document.createElement('div');
         note.className = 'req-note';
@@ -1174,8 +1182,9 @@ function renderSummary() {
         const row = makeRequirementRow({ label: `${year}年`, value: registered, need: CAP_PER_YEAR });
         // CAPは超えてはいけない上限なので、残りか超過を出す
         row.classList.remove('done');
+        row.querySelector('.req-icon').textContent = registered > CAP_PER_YEAR ? '⚠' : '';
         row.querySelector('.req-badge').textContent = registered > CAP_PER_YEAR
-            ? `⚠ ${registered - CAP_PER_YEAR}単位オーバー` : `残り${CAP_PER_YEAR - registered}`;
+            ? `${registered - CAP_PER_YEAR}単位オーバー` : `あと${CAP_PER_YEAR - registered}単位登録できる`;
         if (registered > CAP_PER_YEAR) row.classList.add('over');
         cap.appendChild(row);
     });
