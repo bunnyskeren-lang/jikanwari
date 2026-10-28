@@ -146,6 +146,7 @@ const SEED_CELLS = [
     {"year":1,"quarter":4,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
     {"year":1,"quarter":2,"day":"月","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
     {"year":1,"quarter":2,"day":"水","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
+    {"year":1,"quarter":1,"day":"金","period":5,"subject":"アントレプレナーシップ入門","teacher":"鶴田","room":"K301"},
 ];
 
 const SEED_SUBJECTS = {
@@ -232,4 +233,5 @@ const SEED_SUBJECTS = {
     'Academic English Communication A2': { major: '教養', minor: '外国語', credits: 0.5 },
     'Academic English Literacy A2': { major: '教養', minor: '外国語', credits: 0.5 },
     '起業部': { major: '予定', minor: '部活', credits: 0 },
+    'アントレプレナーシップ入門': { major: '教養', minor: '総合系', credits: 1 },
 };

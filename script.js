@@ -198,6 +198,58 @@ function migrateV5() {
 }
 migrateV5();
 
+// 1年2Q・3Qを公式の時間割で書き直す(一度だけ)
+// ・seed.js にあるコマは科目・教員・教室・区分をすべて公式の内容にする
+// ・それ以外のコマに入っている時間割表の科目(入れる場所を間違えたもの)は消す
+// ・時間割表にない科目(自分で選んだ教養科目など)と予定はそのまま残す
+function migrateV6() {
+    if (localStorage.getItem('migratedV6')) return;
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    const baseName = (name) => normalizeName(name).replace(/[0-9ⅠⅡⅢⅣ]+$/, '');
+    const knownBases = Object.keys(SEED_SUBJECTS).map(baseName);
+    const isKnown = (name) => {
+        const base = baseName(name);
+        return knownBases.some((known) => known === base
+            || (base.length >= 4 && (known.startsWith(base) || base.startsWith(known))));
+    };
+    [2, 3].forEach((quarter) => {
+        const official = SEED_CELLS.filter((c) => c.year === 1 && c.quarter === quarter && c.day !== EXTRA_DAY);
+        DAYS.forEach((day) => {
+            PERIODS.forEach((period) => {
+                const prefix = `cell-1-${quarter}-${day}-${period}-`;
+                const cell = official.find((c) => c.day === day && c.period === period);
+                if (cell) {
+                    FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+                    subjects[cell.subject] = SEED_SUBJECTS[cell.subject];
+                    return;
+                }
+                const current = (localStorage.getItem(prefix + 'subject') || '').trim();
+                const info = subjects[current];
+                if (current && isKnown(current) && !(info && info.major === '予定')) {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV6', '1');
+}
+migrateV6();
+
+// 1年1Qの金曜5限にアントレプレナーシップ入門を入れる(一度だけ)
+function migrateV7() {
+    if (localStorage.getItem('migratedV7')) return;
+    const cell = SEED_CELLS.find((c) => c.subject === 'アントレプレナーシップ入門');
+    if (!cell) return;   // 古い seed.js が読み込まれたときは次回に回す
+    const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+    FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    subjects[cell.subject] = SEED_SUBJECTS[cell.subject];
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV7', '1');
+}
+migrateV7();
+
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
     return saved ? JSON.parse(saved) : {};
