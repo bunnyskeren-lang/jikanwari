@@ -943,9 +943,9 @@ function calcRequirements({ earned, earnedNames }) {
     const senmon = kikai + commonRequired + sum('共通専門基礎(選択)', '専門基礎', '外国語中級(選択)');
 
     const kyoyo = [
-        { label: '教養 基盤系', value: sum('基盤系'), need: 4 },
+        { label: '基盤系', value: sum('基盤系'), need: 4 },
         {
-            label: '教養 人文・社会・自然・総合系',
+            label: '人文・社会・自然・総合系',
             note: '自然系と総合系は合わせて4単位まで',
             value: sum('人文系', '社会系') + Math.min(sum('自然系', '総合系'), 4),
             need: 12
@@ -1039,26 +1039,36 @@ function requiredNamesUpTo(maxYear) {
     return [...new Set(names)];
 }
 
+// 1行分: 左に項目名、右に「✓」か「あと○単位」、下に進み具合のバーと「取った / 必要」
 function makeRequirementRow(row) {
-    const div = document.createElement('div');
+    const unit = row.unit || '単位';
     const done = row.value >= row.need;
+    const div = document.createElement('div');
     div.className = `req-row depth-${row.depth || 0}${done ? ' done' : ''}`;
     const top = document.createElement('div');
     top.className = 'req-top';
     const label = document.createElement('span');
-    label.textContent = `${done ? '✓ ' : ''}${row.label}`;
-    const value = document.createElement('span');
-    value.className = 'req-value';
-    value.textContent = `${row.value} / ${row.need}${row.unit || '単位'}`;
+    label.className = 'req-label';
+    label.textContent = row.label;
+    const badge = document.createElement('span');
+    badge.className = 'req-badge';
+    badge.textContent = done ? '✓' : `あと${row.need - row.value}${unit}`;
     top.appendChild(label);
-    top.appendChild(value);
+    top.appendChild(badge);
     div.appendChild(top);
+    const bottom = document.createElement('div');
+    bottom.className = 'req-bottom';
     const bar = document.createElement('div');
     bar.className = 'req-bar';
     const fill = document.createElement('div');
     fill.style.width = `${Math.min(100, (row.value / row.need) * 100)}%`;
     bar.appendChild(fill);
-    div.appendChild(bar);
+    const value = document.createElement('span');
+    value.className = 'req-value';
+    value.textContent = `${row.value} / ${row.need}`;
+    bottom.appendChild(bar);
+    bottom.appendChild(value);
+    div.appendChild(bottom);
     if (row.note) {
         const note = document.createElement('div');
         note.className = 'req-note';
@@ -1068,19 +1078,47 @@ function makeRequirementRow(row) {
     return div;
 }
 
-function makeSection(title, description) {
-    const section = document.createElement('section');
-    section.className = 'req-section';
-    const h = document.createElement('h3');
+// 開け閉めできるカード。見出しの右に状態(「✓ すべて達成」「2項目が未達成」など)を出す
+function makeCard(title, status, open, statusClass) {
+    const card = document.createElement('details');
+    card.className = 'req-card';
+    card.open = open;
+    const summary = document.createElement('summary');
+    const h = document.createElement('span');
+    h.className = 'req-card-title';
     h.textContent = title;
-    section.appendChild(h);
-    if (description) {
-        const p = document.createElement('p');
-        p.className = 'req-desc';
-        p.textContent = description;
-        section.appendChild(p);
+    summary.appendChild(h);
+    if (status) {
+        const s = document.createElement('span');
+        s.className = `req-card-status ${statusClass || ''}`;
+        s.textContent = status;
+        summary.appendChild(s);
     }
-    return section;
+    card.appendChild(summary);
+    return card;
+}
+function makeGroupTitle(text) {
+    const p = document.createElement('p');
+    p.className = 'req-group';
+    p.textContent = text;
+    return p;
+}
+function makeFootnote(text) {
+    const p = document.createElement('p');
+    p.className = 'req-desc';
+    p.textContent = text;
+    return p;
+}
+function makeOverview(label, big, sub, className) {
+    const div = document.createElement('div');
+    div.className = `overview ${className || ''}`;
+    [['overview-label', label], ['overview-big', big], ['overview-sub', sub]].forEach(([cls, text]) => {
+        const el = document.createElement('div');
+        el.className = cls;
+        el.textContent = text;
+        div.appendChild(el);
+    });
+    return div;
 }
 
 function renderSummary() {
@@ -1089,33 +1127,89 @@ function renderSummary() {
 
     const credits = collectCredits();
     const { graduation, total, thesis } = calcRequirements(credits);
+    const capNow = registeredCredits(view.year);
+    const mistakes = findQuarterMistakes();
+    const overCap = YEARS.some((year) => registeredCredits(year) > CAP_PER_YEAR);
 
-    const grad = makeSection(`卒業要件　${total} / 127単位`,
-        '時間割の科目は単位を取れたものとして数えています（落とした科目は除く）');
-    graduation.forEach((row) => grad.appendChild(makeRequirementRow(row)));
+    // いちばん上に大きく: 卒業まであと何単位か・表示中の学年のCAP
+    const overview = document.createElement('div');
+    overview.className = 'overview-grid';
+    overview.appendChild(makeOverview('卒業まで', `${total} / 127`,
+        total >= 127 ? '✓ 単位は足りています' : `あと${127 - total}単位`, total >= 127 ? 'good' : ''));
+    overview.appendChild(makeOverview(`${view.year}年の登録（CAP）`, `${capNow} / ${CAP_PER_YEAR}`,
+        capNow > CAP_PER_YEAR ? `⚠ ${capNow - CAP_PER_YEAR}単位オーバー` : `あと${CAP_PER_YEAR - capNow}単位登録できる`,
+        capNow > CAP_PER_YEAR ? 'bad' : ''));
+    container.appendChild(overview);
+
+    if (mistakes.length) {
+        const warn = makeCard('⚠ 入れる場所が違うかもしれない科目', `${mistakes.length}件`, true, 'bad');
+        mistakes.forEach((text) => warn.appendChild(makeFootnote(text)));
+        container.appendChild(warn);
+    }
+
+    if (credits.unclassified.length) {
+        const un = makeCard('区分が分からない科目', `${credits.unclassified.length}件`, true, 'bad');
+        credits.unclassified.forEach((name) => {
+            const similar = similarNames(name);
+            un.appendChild(makeFootnote(similar.length ? `${name} → もしかして: ${similar.join('・')}` : name));
+        });
+        un.appendChild(makeFootnote('科目名が便覧と違うと区分が分からず、単位に数えません'));
+        container.appendChild(un);
+    }
+
+    // 卒業要件: 教養と専門に分けて並べる
+    const gradLeft = graduation.filter((r) => r.value < r.need).length;
+    const grad = makeCard('卒業要件', gradLeft ? `${gradLeft}項目が未達成` : '✓ すべて達成', true, gradLeft ? '' : 'good');
+    const senmonStart = graduation.findIndex((r) => r.label.startsWith('専門'));
+    grad.appendChild(makeGroupTitle('教養'));
+    graduation.slice(0, senmonStart).forEach((row) => grad.appendChild(makeRequirementRow(row)));
+    grad.appendChild(makeGroupTitle('専門'));
+    graduation.slice(senmonStart).forEach((row) => grad.appendChild(makeRequirementRow(row)));
+    grad.appendChild(makeFootnote('時間割の科目は単位を取れたものとして数えています（落とした科目は除く）'));
     container.appendChild(grad);
 
-    const cap = makeSection(`履修登録の上限（CAP）　1年間${CAP_PER_YEAR}単位`,
-        '工学部規則第6条。落とした科目・取り消した科目も登録した単位に入ります（予定とグローバルチャレンジ実習は除く）');
+    const cap = makeCard(`履修登録の上限（1年間${CAP_PER_YEAR}単位）`, overCap ? '⚠ 超過あり' : '✓ 上限内', false, overCap ? 'bad' : 'good');
     YEARS.forEach((year) => {
         const registered = registeredCredits(year);
         const row = makeRequirementRow({ label: `${year}年`, value: registered, need: CAP_PER_YEAR });
-        // CAPは超えてはいけない上限なので、達成表示ではなく超過したときだけ警告にする
+        // CAPは超えてはいけない上限なので、残りか超過を出す
         row.classList.remove('done');
-        row.querySelector('.req-top span').textContent = registered > CAP_PER_YEAR ? `⚠ ${year}年 上限超過` : `${year}年`;
+        row.querySelector('.req-badge').textContent = registered > CAP_PER_YEAR
+            ? `⚠ ${registered - CAP_PER_YEAR}単位オーバー` : `残り${CAP_PER_YEAR - registered}`;
         if (registered > CAP_PER_YEAR) row.classList.add('over');
         cap.appendChild(row);
     });
+    cap.appendChild(makeFootnote('工学部規則第6条。落とした科目・取り消した科目も入ります（予定とグローバルチャレンジ実習は除く）'));
     container.appendChild(cap);
 
-    const th = makeSection('4年で卒業研究に着手する条件',
-        '機械工学科内規。2年・3年への進級条件は学生便覧にはありません');
+    const thesisLeft = thesis.filter((r) => r.value < r.need).length;
+    const th = makeCard('4年で卒業研究に着手する条件', thesisLeft ? `${thesisLeft}項目が未達成` : '✓ すべて達成', false, thesisLeft ? '' : 'good');
     thesis.forEach((row) => th.appendChild(makeRequirementRow(row)));
+    th.appendChild(makeFootnote('機械工学科内規'));
     container.appendChild(th);
 
-    const fail = makeSection(showFailed()
-        ? `落とした単位　${credits.failed.reduce((s, f) => s + f.credits, 0)}単位`
-        : '落とした単位');
+    // 早期履修(上の学年の科目を早めに取る)の条件。便覧に2年・3年への進級条件はないので参考として出す
+    const early = makeCard('参考：早期履修の条件', '', false);
+    [[1, 40, '2年次生'], [2, 80, '3年次生']].forEach(([upTo, need, label]) => {
+        early.appendChild(makeGroupTitle(label));
+        early.appendChild(makeRequirementRow({ label: `${upTo === 1 ? '1年次' : '2年次まで'}に修得した単位`, value: earnedCreditsUpTo(upTo), need }));
+        const required = requiredNamesUpTo(upTo);
+        const missing = required.filter((name) => !credits.earnedNames.has(name));
+        early.appendChild(makeRequirementRow({
+            label: `${upTo === 1 ? '1年次' : '1・2年次'}の必修科目`,
+            value: required.length - missing.length,
+            need: required.length,
+            unit: '科目',
+            note: missing.length ? `未修得: ${missing.join('、')}` : ''
+        }));
+    });
+    early.appendChild(makeFootnote('2年・3年への進級条件は便覧にありません。これは上の学年の科目を早めに履修するための条件です（工学部 早期履修に関する内規）。成績（90%以上が秀・優）はアプリでは確かめられません'));
+    container.appendChild(early);
+
+    // 落とした単位は人に見られたくないので、トグルをオンにしたときだけ中身を出す
+    const fail = makeCard('落とした単位', showFailed()
+        ? `${credits.failed.reduce((s, f) => s + f.credits, 0)}単位` : '非表示', false);
+    fail.classList.add('fail-card');
     const toggle = document.createElement('button');
     toggle.className = 'toggle';
     toggle.setAttribute('role', 'switch');
@@ -1124,9 +1218,9 @@ function renderSummary() {
     toggle.addEventListener('click', () => {
         localStorage.setItem('showFailed', showFailed() ? '0' : '1');
         refresh();
+        document.querySelector('.fail-card').open = true;
     });
     fail.appendChild(toggle);
-    // 隠しているときは一覧を出さない(時間割の赤い印も isFailedShown で消える)
     if (showFailed() && credits.failed.length) {
         credits.failed.forEach((f) => {
             const row = document.createElement('div');
@@ -1140,66 +1234,21 @@ function renderSummary() {
             fail.appendChild(row);
         });
     } else if (showFailed()) {
-        const none = document.createElement('p');
-        none.className = 'req-desc';
-        none.textContent = 'なし（コマの編集画面で「単位を落とした」にチェックすると、ここに出ます）';
-        fail.appendChild(none);
+        fail.appendChild(makeFootnote('なし（コマの編集画面で「単位を落とした」にチェックすると、ここに出ます）'));
     }
     container.appendChild(fail);
 
-    const mistakes = findQuarterMistakes();
-    if (mistakes.length) {
-        const warn = makeSection(`⚠ 入れるクォーター・コマが違う可能性がある科目　${mistakes.length}件`);
-        warn.classList.add('warning-section');
-        mistakes.forEach((text) => {
-            const p = document.createElement('p');
-            p.className = 'req-desc';
-            p.textContent = text;
-            warn.appendChild(p);
-        });
-        container.prepend(warn);
-    }
-    const overCap = YEARS.some((year) => registeredCredits(year) > CAP_PER_YEAR);
     document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0 || overCap);
-
-    if (credits.unclassified.length) {
-        const un = makeSection('区分が未設定の科目（単位に数えていません）',
-            '科目名が便覧と違うと区分が分かりません。似た科目名があれば下に出します');
-        credits.unclassified.forEach((name) => {
-            const p = document.createElement('p');
-            p.className = 'req-desc';
-            const similar = similarNames(name);
-            p.textContent = similar.length ? `${name} → もしかして: ${similar.join('・')}` : name;
-            un.appendChild(p);
-        });
-        container.appendChild(un);
-    }
-
-    // 早期履修(上の学年の科目を早めに取る)の条件。便覧に2年・3年への進級条件はないので参考として出す
-    const early = makeSection('参考：早期履修の条件（工学部 早期履修に関する内規）',
-        '2年・3年への進級条件は便覧にありません。これは上の学年の科目を早めに履修するための条件です。成績（90%以上が秀・優）はこのアプリでは確かめられません');
-    [[1, 40, '2年次生'], [2, 80, '3年次生']].forEach(([upTo, need, label]) => {
-        early.appendChild(makeRequirementRow({ label: `${label}：${upTo === 1 ? '1年次' : '2年次まで'}に修得した単位`, value: earnedCreditsUpTo(upTo), need }));
-        const missing = requiredNamesUpTo(upTo).filter((name) => !credits.earnedNames.has(name));
-        early.appendChild(makeRequirementRow({
-            label: `${label}：${upTo === 1 ? '1年次' : '1・2年次'}に配当の必修科目をすべて`,
-            value: requiredNamesUpTo(upTo).length - missing.length,
-            need: requiredNamesUpTo(upTo).length,
-            unit: '科目',
-            note: missing.length ? `未修得: ${missing.join('、')}` : ''
-        }));
-    });
-    container.appendChild(early);
-
     document.getElementById('total-credits').textContent = total;
 }
 
-const summaryToggle = document.getElementById('summary-toggle');
-summaryToggle.addEventListener('click', () => {
-    const summary = document.getElementById('summary');
-    summary.hidden = !summary.hidden;
-    summaryToggle.setAttribute('aria-expanded', String(!summary.hidden));
+const summaryDialog = document.getElementById('summary-dialog');
+document.getElementById('summary-toggle').addEventListener('click', () => {
+    renderSummary();
+    summaryDialog.showModal();
+    document.getElementById('summary').scrollTop = 0;
 });
+document.getElementById('summary-close').addEventListener('click', () => summaryDialog.close());
 
 function renderLegend() {
     const legend = document.getElementById('legend');

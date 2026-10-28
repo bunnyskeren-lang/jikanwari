@@ -90,57 +90,200 @@ h1 {
 .credit-chip strong {
     font-size: 16px;
 }
-#summary {
-    margin: 8px 0 0;
-    padding: 4px 12px 8px;
-    background: var(--bg);
-    border-radius: 10px;
-    font-size: 13px;
-    max-height: 65vh;
-    overflow-y: auto;
-}
 .summary-row {
     display: flex;
     justify-content: space-between;
     gap: 8px;
-    padding: 3px 0;
+    padding: 6px 0;
+    font-size: 14px;
 }
 
-/* 卒業要件・卒業研究の着手条件 */
-.req-section h3 {
-    font-size: 14px;
-    margin: 10px 0 2px;
-    color: var(--accent);
+/* 単位の確認(全画面のページ) */
+#summary-dialog {
+    width: 100%;
+    max-width: 560px;
+    height: 100%;
+    max-height: 100%;
+    margin: 0 auto;
+    padding: 0;
+    border-radius: 0;
+    background: var(--bg);
 }
-.req-desc {
-    margin: 0 0 6px;
-    font-size: 11px;
+#summary-dialog[open] {
+    display: flex;
+    flex-direction: column;
+}
+.sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--line);
+}
+.sheet-header h2 {
+    margin: 0;
+    font-size: 18px;
+}
+.sheet-header button {
+    border: none;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-size: 15px;
+}
+#summary {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 12px calc(24px + env(safe-area-inset-bottom));
+}
+
+/* いちばん上の大きな数字 */
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+.overview {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 12px;
+}
+.overview-label {
+    font-size: 12px;
     color: var(--muted);
 }
+.overview-big {
+    font-size: 26px;
+    font-weight: bold;
+    margin: 2px 0;
+}
+.overview-sub {
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--accent);
+}
+.overview.good .overview-sub {
+    color: var(--c-elective-bar);
+}
+.overview.bad .overview-sub {
+    color: var(--danger);
+}
+
+/* 区分ごとのカード(タップで開け閉め) */
+.req-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 0 14px;
+    margin-bottom: 10px;
+}
+.req-card summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 14px 0;
+    list-style: none;
+    cursor: pointer;
+}
+.req-card summary::-webkit-details-marker {
+    display: none;
+}
+.req-card-title {
+    font-size: 15px;
+    font-weight: bold;
+}
+.req-card-title::before {
+    content: "▸ ";
+    color: var(--muted);
+}
+.req-card[open] .req-card-title::before {
+    content: "▾ ";
+}
+.req-card-status {
+    flex: none;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+.req-card-status.good {
+    background: var(--c-elective);
+    color: var(--c-elective-bar);
+}
+.req-card-status.bad {
+    background: var(--c-required);
+    color: var(--danger);
+}
+.req-card[open] {
+    padding-bottom: 10px;
+}
+.req-group {
+    margin: 6px 0 2px;
+    font-size: 12px;
+    font-weight: bold;
+    color: var(--muted);
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 3px;
+}
+.req-desc {
+    margin: 8px 0 4px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--muted);
+}
+
+/* 1行分の要件 */
 .req-row {
-    padding: 4px 0;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--line);
+}
+.req-row:last-of-type {
+    border-bottom: none;
 }
 .req-row.depth-1 {
-    padding-left: 12px;
+    margin-left: 14px;
 }
 .req-row.depth-2 {
-    padding-left: 24px;
+    margin-left: 28px;
+}
+.req-row.depth-1,
+.req-row.depth-2 {
+    padding-left: 8px;
+    border-left: 2px solid var(--line);
 }
 .req-top {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
-.req-value {
-    white-space: nowrap;
-    font-weight: bold;
+.req-label {
+    font-size: 14px;
 }
-.req-row.done .req-top {
+.req-badge {
+    flex: none;
+    font-size: 13px;
+    font-weight: bold;
+    color: #c2660a;
+}
+.req-row.done .req-badge {
     color: var(--c-elective-bar);
+    font-size: 16px;
+}
+.req-bottom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 5px;
 }
 .req-bar {
-    height: 5px;
-    margin-top: 3px;
+    flex: 1;
+    height: 6px;
     border-radius: 3px;
     background: var(--line);
     overflow: hidden;
@@ -152,7 +295,14 @@ h1 {
 .req-row.done .req-bar div {
     background: var(--c-elective-bar);
 }
-.req-row.over .req-top,
+.req-value {
+    flex: none;
+    min-width: 54px;
+    text-align: right;
+    font-size: 12px;
+    color: var(--muted);
+}
+.req-row.over .req-badge,
 .req-row.over .req-note {
     color: var(--danger);
 }
@@ -160,16 +310,13 @@ h1 {
     background: var(--danger);
 }
 .req-note {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--muted);
-    margin-top: 2px;
-}
-.warning,
-.warning-section h3,
-.warning-section .req-desc {
-    color: var(--danger);
+    margin-top: 4px;
+    line-height: 1.5;
 }
 .warning {
+    color: var(--danger);
     margin: -6px 0 10px;
     font-size: 12px;
     font-weight: bold;
