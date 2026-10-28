@@ -290,6 +290,72 @@ function migrateV8() {
 }
 migrateV8();
 
+// 1年の Academic English を入れ直す(一度だけ)
+// 1Qは対面(55クラス)、2Q〜4Qはオンデマンド(遠隔クラス)。以前の入れ間違い(3QにA1など)は消す
+function migrateV9() {
+    if (localStorage.getItem('migratedV9')) return;
+    const official = SEED_CELLS.filter((c) => c.year === 1 && c.subject.startsWith('Academic English'));
+    if (!official.length) return;   // 古い seed.js が読み込まれたときは次回に回す
+    QUARTERS.forEach((quarter) => {
+        [...DAYS, EXTRA_DAY].forEach((day) => {
+            const periods = day === EXTRA_DAY ? extraEntries(1, quarter).map((e) => e.period) : PERIODS;
+            periods.forEach((period) => {
+                const prefix = `cell-1-${quarter}-${day}-${period}-`;
+                if ((localStorage.getItem(prefix + 'subject') || '').startsWith('Academic English')) {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+    });
+    official.forEach((cell) => {
+        const period = cell.day === EXTRA_DAY ? nextExtraPeriod(1, cell.quarter) : cell.period;
+        const prefix = `cell-1-${cell.quarter}-${cell.day}-${period}-`;
+        if ((localStorage.getItem(prefix + 'subject') || '').trim()) return;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    Object.keys(SEED_SUBJECTS).filter((n) => n.startsWith('Academic English')).forEach((name) => {
+        subjects[name] = { ...SEED_SUBJECTS[name], failed: subjects[name] && subjects[name].failed };
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV9', '1');
+}
+migrateV9();
+
+// 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
+// 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
+function expectedQuarters(name) {
+    const fromSeed = new Set(SEED_CELLS.filter((c) => c.subject === name).map((c) => c.quarter));
+    if (fromSeed.size) return fromSeed;
+    const english = name.match(/^Academic English (Communication|Literacy) ([AB])([12])$/);
+    if (english) return new Set([(english[2] === 'A' ? 0 : 2) + Number(english[3])]);
+    const numbered = name.match(/^(微分積分|線形代数|フランス語初級[AB])([1-4])$/);
+    if (numbered) return new Set([Number(numbered[2])]);
+    return null;
+}
+function quarterWarning(name, quarter) {
+    const subject = normalizeName(name);
+    if (/^AcademicEnglish/.test(subject) && !/^AcademicEnglish(Communication|Literacy)[AB][12]$/.test(subject)) {
+        return 'Academic English は A1(1Q)・A2(2Q)・B1(3Q)・B2(4Q) の4つだけです';
+    }
+    const expected = expectedQuarters(name);
+    if (!expected || expected.has(quarter)) return '';
+    return `この科目は ${[...expected].sort().map((q) => `${q}Q`).join('・')} の授業です`;
+}
+function findQuarterMistakes() {
+    const mistakes = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const m = key.match(/^cell-(\d)-(\d)-(.+)-(.+)-subject$/);
+        if (!m) continue;
+        const name = (localStorage.getItem(key) || '').trim();
+        if (!name || (subjects[name] && subjects[name].major === '予定')) continue;
+        const warning = quarterWarning(name, Number(m[2]));
+        if (warning) mistakes.push(`${m[1]}年${m[2]}Q ${m[3]}${m[3] === EXTRA_DAY ? '' : '曜'}：${name}（${warning}）`);
+    }
+    return mistakes;
+}
+
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
     return saved ? JSON.parse(saved) : {};
@@ -523,6 +589,15 @@ subjectInput.addEventListener('change', () => {
     const name = subjectInput.value.trim();
     if (subjects[name]) showSubjectInfo(name);
 });
+// 入力中の科目が別のクォーターの授業なら、その場で注意を出す
+function updateQuarterWarning() {
+    const warning = document.getElementById('dialog-warning');
+    const name = subjectInput.value.trim();
+    const text = name && editing ? quarterWarning(name, editing.quarter) : '';
+    warning.textContent = text ? `⚠ ${text}` : '';
+    warning.hidden = !text;
+}
+subjectInput.addEventListener('input', updateQuarterWarning);
 
 function fillSubjectList() {
     const list = document.getElementById('subject-list');
@@ -551,6 +626,7 @@ function openCellDialog(year, quarter, day, period) {
     allQuartersInput.checked = false;
     document.getElementById('dialog-all-quarters-label').hidden = isExtra;
     fillSubjectList();
+    updateQuarterWarning();
     dialog.showModal();
 }
 
@@ -789,6 +865,20 @@ function renderSummary() {
         fail.appendChild(none);
     }
     container.appendChild(fail);
+
+    const mistakes = findQuarterMistakes();
+    if (mistakes.length) {
+        const warn = makeSection(`⚠ 入れるクォーターが違う可能性がある科目　${mistakes.length}件`);
+        warn.classList.add('warning-section');
+        mistakes.forEach((text) => {
+            const p = document.createElement('p');
+            p.className = 'req-desc';
+            p.textContent = text;
+            warn.appendChild(p);
+        });
+        container.prepend(warn);
+    }
+    document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0);
 
     if (credits.unclassified.length) {
         const un = makeSection('区分が未設定の科目（単位に数えていません）', credits.unclassified.join('、'));

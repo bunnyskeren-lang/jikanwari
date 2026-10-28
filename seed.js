@@ -1,5 +1,5 @@
 // 機械工学科の時間割（2026年度 工学部時間割表 1Q〜4Q・学籍番号奇数）
-// 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)・時間外のAcademic English(遠隔クラス)は教養教育院の2026年度時間割による
+// 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)・Academic English(1Qは対面55クラス、2Q〜4Qは遠隔クラス)は教養教育院の2026年度時間割による
 // 単位数と区分は 2026 学生便覧 別表第1ホ・機械工学科 履修科目一覧表（◎必修・○△選択必修）による
 const SEED_CELLS = [
     {"year":1,"quarter":1,"day":"火","period":1,"subject":"微分積分1","teacher":"桔梗","room":"B109"},
@@ -132,10 +132,6 @@ const SEED_CELLS = [
     {"year":3,"quarter":4,"day":"木","period":2,"subject":"生産システム工学","teacher":"鈴木","room":"5W-301"},
     {"year":3,"quarter":4,"day":"木","period":4,"subject":"先端機械工学詳論","teacher":"全教員","room":"C3-302"},
     {"year":3,"quarter":4,"day":"金","period":4,"subject":"安全工学・工学倫理Ⅱ","teacher":"伊藤","room":"5W-301"},
-    {"year":1,"quarter":3,"day":"時間外","period":1,"subject":"Academic English Communication A1","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
-    {"year":1,"quarter":3,"day":"時間外","period":2,"subject":"Academic English Literacy A1","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
-    {"year":1,"quarter":4,"day":"時間外","period":1,"subject":"Academic English Communication A2","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
-    {"year":1,"quarter":4,"day":"時間外","period":2,"subject":"Academic English Literacy A2","teacher":"Mullin Bertram","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":1,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
     {"year":1,"quarter":1,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
     {"year":1,"quarter":2,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
@@ -147,6 +143,14 @@ const SEED_CELLS = [
     {"year":1,"quarter":2,"day":"月","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
     {"year":1,"quarter":2,"day":"水","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
     {"year":1,"quarter":1,"day":"金","period":5,"subject":"アントレプレナーシップ入門","teacher":"鶴田","room":"K301"},
+    {"year":1,"quarter":1,"day":"月","period":4,"subject":"Academic English Literacy A1","teacher":"Stephen Horn","room":"D309"},
+    {"year":1,"quarter":1,"day":"水","period":3,"subject":"Academic English Communication A1","teacher":"野原","room":"C202"},
+    {"year":1,"quarter":2,"day":"時間外","period":1,"subject":"Academic English Communication A2","teacher":"ショルト","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":2,"day":"時間外","period":2,"subject":"Academic English Literacy A2","teacher":"横川","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":3,"day":"時間外","period":1,"subject":"Academic English Communication B1","teacher":"TAN JOY ANN FAITH FRANCISCO","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":3,"day":"時間外","period":2,"subject":"Academic English Literacy B1","teacher":"横川","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":4,"day":"時間外","period":1,"subject":"Academic English Communication B2","teacher":"TAN JOY ANN FAITH FRANCISCO","room":"オンデマンド(遠隔)"},
+    {"year":1,"quarter":4,"day":"時間外","period":2,"subject":"Academic English Literacy B2","teacher":"横川","room":"オンデマンド(遠隔)"},
 ];
 
 const SEED_SUBJECTS = {
@@ -228,10 +232,14 @@ const SEED_SUBJECTS = {
     'フランス語初級B3': { major: '教養', minor: '外国語第Ⅱ', credits: 0.5 },
     'フランス語初級A4': { major: '教養', minor: '外国語第Ⅱ', credits: 0.5 },
     'フランス語初級B4': { major: '教養', minor: '外国語第Ⅱ', credits: 0.5 },
-    'Academic English Communication A1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
-    'Academic English Literacy A1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
-    'Academic English Communication A2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
-    'Academic English Literacy A2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
     '起業部': { major: '予定', minor: '部活', credits: 0 },
     'アントレプレナーシップ入門': { major: '教養', minor: '総合系', credits: 1 },
+    'Academic English Communication A1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Communication A2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Communication B1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Communication B2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Literacy A1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Literacy A2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Literacy B1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    'Academic English Literacy B2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
 };

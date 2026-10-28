@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="時間割">
-    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="style.css?v=10">
 </head>
 
 <body>
@@ -41,6 +41,7 @@
         <label>科目名
             <input id="dialog-subject" list="subject-list" autocomplete="off" enterkeyhint="next">
         </label>
+        <p class="warning" id="dialog-warning" hidden></p>
         <datalist id="subject-list"></datalist>
         <div class="row">
             <label>教室<input id="dialog-room" autocomplete="off"></label>
@@ -69,7 +70,7 @@
 </dialog>
 
     <!-- ?v= を変えると、スマホに古いファイルが残っていても新しい版が読み込まれる -->
-    <script src="seed.js?v=9"></script>
-    <script src="script.js?v=9"></script>
+    <script src="seed.js?v=10"></script>
+    <script src="script.js?v=10"></script>
 </body>
 </html>

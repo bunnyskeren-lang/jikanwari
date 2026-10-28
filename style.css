@@ -157,6 +157,20 @@ h1 {
     color: var(--muted);
     margin-top: 2px;
 }
+.warning,
+.warning-section h3,
+.warning-section .req-desc {
+    color: var(--danger);
+}
+.warning {
+    margin: -6px 0 10px;
+    font-size: 12px;
+    font-weight: bold;
+}
+.credit-chip.has-warning::before {
+    content: "⚠ ";
+    color: var(--danger);
+}
 .failed-row {
     color: var(--danger);
 }
