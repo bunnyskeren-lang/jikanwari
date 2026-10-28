@@ -322,16 +322,48 @@ function migrateV9() {
 }
 migrateV9();
 
+// 1年4Qの教養科目を履修登録どおりに入れ、線形代数3・4は1年から外して2年の再履修クラスへ移す(一度だけ)
+function migrateV10() {
+    if (localStorage.getItem('migratedV10')) return;
+    const added = SEED_CELLS.filter((c) => ['政治学B', '西洋史B', '言語科学B'].includes(c.subject)
+        || (c.year === 2 && ['線形代数3', '線形代数4'].includes(c.subject)));
+    if (added.length < 5) return;   // 古い seed.js が読み込まれたときは次回に回す
+    [[3, '線形代数3'], [4, '線形代数4']].forEach(([quarter, name]) => {
+        DAYS.forEach((day) => {
+            PERIODS.forEach((period) => {
+                const prefix = `cell-1-${quarter}-${day}-${period}-`;
+                if (normalizeName(localStorage.getItem(prefix + 'subject') || '') === name) {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+    });
+    added.forEach((cell) => {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        const current = (localStorage.getItem(prefix + 'subject') || '').trim();
+        // 2年の再履修は空きコマにだけ入れる。1年4Qの教養は履修登録の内容なので上書きする
+        if (cell.year === 2 && current && current !== cell.subject) return;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    ['政治学B', '西洋史B', '言語科学B'].forEach((name) => {
+        subjects[name] = { ...SEED_SUBJECTS[name], failed: subjects[name] && subjects[name].failed };
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV10', '1');
+}
+migrateV10();
+
 // 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
 // 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
+// 再履修クラスは別のクォーターにあるので、番号から決まるクォーターと時間割表のクォーターの両方を認める
 function expectedQuarters(name) {
-    const fromSeed = new Set(SEED_CELLS.filter((c) => c.subject === name).map((c) => c.quarter));
-    if (fromSeed.size) return fromSeed;
+    const expected = new Set(SEED_CELLS.filter((c) => c.subject === name).map((c) => c.quarter));
     const english = name.match(/^Academic English (Communication|Literacy) ([AB])([12])$/);
-    if (english) return new Set([(english[2] === 'A' ? 0 : 2) + Number(english[3])]);
+    if (english) expected.add((english[2] === 'A' ? 0 : 2) + Number(english[3]));
     const numbered = name.match(/^(微分積分|線形代数|フランス語初級[AB])([1-4])$/);
-    if (numbered) return new Set([Number(numbered[2])]);
-    return null;
+    if (numbered) expected.add(Number(numbered[2]));
+    return expected.size ? expected : null;
 }
 function quarterWarning(name, quarter) {
     const subject = normalizeName(name);
@@ -771,6 +803,28 @@ function calcRequirements({ earned, earnedNames }) {
     return { graduation, total, thesis };
 }
 
+// 工学部規則第6条 履修科目の登録の上限
+const CAP_PER_YEAR = 54;
+const CAP_EXEMPT = ['グローバルチャレンジ実習'];
+
+// その学年に登録している単位(同じ科目は1回だけ数える。落とした科目も登録はしているので数える)
+function registeredCredits(year) {
+    const names = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key.startsWith(`cell-${year}-`) || !key.endsWith('-subject')) continue;
+        const name = (localStorage.getItem(key) || '').trim();
+        if (name) names.add(name);
+    }
+    let total = 0;
+    names.forEach((name) => {
+        const info = subjects[name];
+        if (!info || info.major === '予定' || CAP_EXEMPT.some((x) => name.startsWith(x))) return;
+        total += info.credits;
+    });
+    return total;
+}
+
 function makeRequirementRow(row) {
     const div = document.createElement('div');
     const done = row.value >= row.need;
@@ -827,6 +881,19 @@ function renderSummary() {
     graduation.forEach((row) => grad.appendChild(makeRequirementRow(row)));
     container.appendChild(grad);
 
+    const cap = makeSection(`履修登録の上限（CAP）　1年間${CAP_PER_YEAR}単位`,
+        '工学部規則第6条。落とした科目・取り消した科目も登録した単位に入ります（予定とグローバルチャレンジ実習は除く）');
+    YEARS.forEach((year) => {
+        const registered = registeredCredits(year);
+        const row = makeRequirementRow({ label: `${year}年`, value: registered, need: CAP_PER_YEAR });
+        // CAPは超えてはいけない上限なので、達成表示ではなく超過したときだけ警告にする
+        row.classList.remove('done');
+        row.querySelector('.req-top span').textContent = registered > CAP_PER_YEAR ? `⚠ ${year}年 上限超過` : `${year}年`;
+        if (registered > CAP_PER_YEAR) row.classList.add('over');
+        cap.appendChild(row);
+    });
+    container.appendChild(cap);
+
     const th = makeSection('4年で卒業研究に着手する条件',
         '機械工学科内規。2年・3年への進級条件は学生便覧にはありません');
     thesis.forEach((row) => th.appendChild(makeRequirementRow(row)));
@@ -878,7 +945,8 @@ function renderSummary() {
         });
         container.prepend(warn);
     }
-    document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0);
+    const overCap = YEARS.some((year) => registeredCredits(year) > CAP_PER_YEAR);
+    document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0 || overCap);
 
     if (credits.unclassified.length) {
         const un = makeSection('区分が未設定の科目（単位に数えていません）', credits.unclassified.join('、'));

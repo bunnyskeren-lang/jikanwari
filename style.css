@@ -152,6 +152,13 @@ h1 {
 .req-row.done .req-bar div {
     background: var(--c-elective-bar);
 }
+.req-row.over .req-top,
+.req-row.over .req-note {
+    color: var(--danger);
+}
+.req-row.over .req-bar div {
+    background: var(--danger);
+}
 .req-note {
     font-size: 11px;
     color: var(--muted);

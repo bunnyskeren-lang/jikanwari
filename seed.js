@@ -1,5 +1,6 @@
 // 機械工学科の時間割（2026年度 工学部時間割表 1Q〜4Q・学籍番号奇数）
 // 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)・Academic English(1Qは対面55クラス、2Q〜4Qは遠隔クラス)は教養教育院の2026年度時間割による
+// 1年4Qの教養科目は履修登録画面より。線形代数3・4は2年の再履修クラス(前期 木曜5限)で取る
 // 単位数と区分は 2026 学生便覧 別表第1ホ・機械工学科 履修科目一覧表（◎必修・○△選択必修）による
 const SEED_CELLS = [
     {"year":1,"quarter":1,"day":"火","period":1,"subject":"微分積分1","teacher":"桔梗","room":"B109"},
@@ -29,7 +30,6 @@ const SEED_CELLS = [
     {"year":1,"quarter":3,"day":"水","period":3,"subject":"物理学実験","teacher":"鈴木","room":""},
     {"year":1,"quarter":3,"day":"水","period":4,"subject":"物理学実験","teacher":"鈴木","room":""},
     {"year":1,"quarter":3,"day":"木","period":1,"subject":"フランス語初級B3","teacher":"武内","room":"D615"},
-    {"year":1,"quarter":3,"day":"木","period":2,"subject":"線形代数3","teacher":"長坂","room":"K301"},
     {"year":1,"quarter":3,"day":"木","period":3,"subject":"基礎力学Ⅱ","teacher":"田川・長谷部","room":"LR201"},
     {"year":1,"quarter":3,"day":"木","period":4,"subject":"情報科学1","teacher":"片山","room":"B210"},
     {"year":1,"quarter":3,"day":"金","period":2,"subject":"基礎力学Ⅱ","teacher":"田川・長谷部","room":"C3-302"},
@@ -43,7 +43,6 @@ const SEED_CELLS = [
     {"year":1,"quarter":4,"day":"水","period":3,"subject":"物理学実験","teacher":"鈴木","room":""},
     {"year":1,"quarter":4,"day":"水","period":4,"subject":"物理学実験","teacher":"鈴木","room":""},
     {"year":1,"quarter":4,"day":"木","period":1,"subject":"フランス語初級B4","teacher":"武内","room":"D615"},
-    {"year":1,"quarter":4,"day":"木","period":2,"subject":"線形代数4","teacher":"長坂","room":"K301"},
     {"year":1,"quarter":4,"day":"木","period":4,"subject":"情報科学2","teacher":"片山","room":"B210"},
     {"year":1,"quarter":4,"day":"金","period":2,"subject":"材料力学Ⅰ","teacher":"塩澤","room":"鶴1B110"},
     {"year":1,"quarter":4,"day":"金","period":3,"subject":"機械工学実習Ⅱ","teacher":"村川・杉本・栗本・横小路","room":"工作技術センター"},
@@ -151,6 +150,11 @@ const SEED_CELLS = [
     {"year":1,"quarter":3,"day":"時間外","period":2,"subject":"Academic English Literacy B1","teacher":"横川","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":4,"day":"時間外","period":1,"subject":"Academic English Communication B2","teacher":"TAN JOY ANN FAITH FRANCISCO","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":4,"day":"時間外","period":2,"subject":"Academic English Literacy B2","teacher":"横川","room":"オンデマンド(遠隔)"},
+    {"year":2,"quarter":1,"day":"木","period":5,"subject":"線形代数3","teacher":"比嘉","room":""},
+    {"year":2,"quarter":2,"day":"木","period":5,"subject":"線形代数4","teacher":"比嘉","room":""},
+    {"year":1,"quarter":4,"day":"月","period":1,"subject":"政治学B","teacher":"安岡","room":"K402"},
+    {"year":1,"quarter":4,"day":"水","period":1,"subject":"西洋史B","teacher":"小澤","room":"C201"},
+    {"year":1,"quarter":4,"day":"水","period":2,"subject":"言語科学B","teacher":"南","room":"B201"},
 ];
 
 const SEED_SUBJECTS = {
@@ -242,4 +246,7 @@ const SEED_SUBJECTS = {
     'Academic English Literacy A2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
     'Academic English Literacy B1': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
     'Academic English Literacy B2': { major: '教養', minor: '外国語第Ⅰ', credits: 0.5 },
+    '政治学B': { major: '教養', minor: '社会系', credits: 1 },
+    '西洋史B': { major: '教養', minor: '人文系', credits: 1 },
+    '言語科学B': { major: '教養', minor: '人文系', credits: 1 },
 };
