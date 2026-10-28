@@ -16,6 +16,7 @@
     --c-general: #fbe4f1;  --c-general-bar: #c8559a;
     --c-language: #d7f3f1; --c-language-bar: #1f9e95;
     --c-elective-b: #fff1c2; --c-elective-b-bar: #c99a12;
+    --c-kiso: #e3e4fb;     --c-kiso-bar: #5b5fd6;
     --c-plan: #f1ece4;     --c-plan-bar: #8a6a3f;
     --c-none: #eceff3;     --c-none-bar: #9aa3af;
 }
@@ -39,6 +40,7 @@
         --c-language: #17403d;
         --c-plan: #3a3226;
         --c-elective-b: #3f3514;
+        --c-kiso: #2a2c55;
         --c-none: #2a2f39;
     }
 }
@@ -432,6 +434,7 @@ td {
 .cat-general  { background: var(--c-general);  border-left-color: var(--c-general-bar); }
 .cat-language { background: var(--c-language); border-left-color: var(--c-language-bar); }
 .cat-elective-b { background: var(--c-elective-b); border-left-color: var(--c-elective-b-bar); }
+.cat-kiso     { background: var(--c-kiso);     border-left-color: var(--c-kiso-bar); }
 .cat-plan     { background: var(--c-plan);     border-left-color: var(--c-plan-bar); }
 .cat-none     { background: var(--c-none);     border-left-color: var(--c-none-bar); }
 

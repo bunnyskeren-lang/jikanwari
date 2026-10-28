@@ -24,7 +24,7 @@ const EXTRA_DAY = '時間外';   // オンデマンドなど曜日・時限の�
 const CATEGORY_CLASS = {
     '共通専門基礎(必修)': 'cat-common',
     '共通専門基礎(選択)': 'cat-common',
-    '専門基礎': 'cat-common',
+    '専門基礎': 'cat-kiso',
     '必修◎': 'cat-required',
     '選択必修○': 'cat-elective',
     '選択必修△': 'cat-elective-b',
@@ -41,7 +41,7 @@ const CATEGORY_CLASS = {
     '卒業要件外': 'cat-none'
 };
 const LEGEND = [
-    ['共通専門基礎・専門基礎', 'cat-common'], ['必修◎', 'cat-required'], ['選択必修○', 'cat-elective'],
+    ['共通専門基礎', 'cat-common'], ['専門基礎', 'cat-kiso'], ['必修◎', 'cat-required'], ['選択必修○', 'cat-elective'],
     ['選択必修△', 'cat-elective-b'],
     ['選択', 'cat-other'], ['教養', 'cat-liberal'], ['総合系', 'cat-general'], ['外国語', 'cat-language'], ['予定', 'cat-plan']
 ];
