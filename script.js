@@ -12,22 +12,41 @@ const DEFAULT_TIMES = [
 ];
 const FIELDS = ['subject', 'room', 'teacher'];
 
+// 区分は学生便覧(機械工学科 令和8年度入学者)の卒業要件に合わせる
+// 必修◎・選択必修○△・選択 は「機械工学科専門科目」
 const CATEGORIES = {
-    '専門': ['共通専門', '必修', '選択必修', 'その他'],
-    '教養': ['人文社会', '総合系', '外国語'],
+    '専門': ['共通専門基礎(必修)', '共通専門基礎(選択)', '専門基礎', '必修◎', '選択必修○', '選択必修△', '選択'],
+    '教養': ['基盤系', '人文系', '社会系', '自然系', '総合系', '外国語第Ⅰ', '外国語第Ⅱ', '健康・スポーツ', '外国語中級(選択)', '卒業要件外'],
     '予定': ['部活', 'アルバイト', 'その他']   // 授業以外の予定(単位には数えない)
 };
 const EXTRA_DAY = '時間外';   // オンデマンドなど曜日・時限のない授業
 // 分類ごとの色(style.css の .cat-xxx)
 const CATEGORY_CLASS = {
-    '共通専門': 'cat-common',
-    '必修': 'cat-required',
-    '選択必修': 'cat-elective',
-    'その他': 'cat-other',
-    '人文社会': 'cat-liberal',
+    '共通専門基礎(必修)': 'cat-common',
+    '共通専門基礎(選択)': 'cat-common',
+    '専門基礎': 'cat-common',
+    '必修◎': 'cat-required',
+    '選択必修○': 'cat-elective',
+    '選択必修△': 'cat-elective',
+    '選択': 'cat-other',
+    '基盤系': 'cat-liberal',
+    '人文系': 'cat-liberal',
+    '社会系': 'cat-liberal',
+    '自然系': 'cat-liberal',
     '総合系': 'cat-general',
-    '外国語': 'cat-language'
+    '外国語第Ⅰ': 'cat-language',
+    '外国語第Ⅱ': 'cat-language',
+    '外国語中級(選択)': 'cat-language',
+    '健康・スポーツ': 'cat-liberal',
+    '卒業要件外': 'cat-none'
 };
+const LEGEND = [
+    ['共通専門基礎・専門基礎', 'cat-common'], ['必修◎', 'cat-required'], ['選択必修○△', 'cat-elective'],
+    ['選択', 'cat-other'], ['教養', 'cat-liberal'], ['総合系', 'cat-general'], ['外国語', 'cat-language'], ['予定', 'cat-plan']
+];
+// 卒業研究に着手するために全部取る必要がある「実験・実習・演習」区分の必修科目
+const LAB_REQUIRED = ['機械製図Ⅰ', '機械製図Ⅱ', '機械工学実習Ⅰ', '機械工学実習Ⅱ', 'プログラミング演習Ⅰ',
+    'プログラミング演習Ⅱ', 'プログラミング演習Ⅲ', '機械工学実験', '機械設計製作演習Ⅰ', '機械設計製作演習Ⅱ'];
 
 // seed.js の時間割を空いているコマにだけ入れる(一度だけ)
 function applySeed() {
@@ -250,6 +269,27 @@ function migrateV7() {
 }
 migrateV7();
 
+// 区分を学生便覧の卒業要件に合わせた新しい区分に置き換える(一度だけ)
+// 時間割表の科目は seed.js の区分に、それ以外は古い区分から近いものに移す。落単の印は残す
+function migrateV8() {
+    if (localStorage.getItem('migratedV8')) return;
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    const OLD_TO_NEW = { '共通専門': '共通専門基礎(選択)', '必修': '必修◎', '選択必修': '選択', 'その他': '選択', '人文社会': '人文系' };
+    Object.keys(subjects).forEach((name) => {
+        const info = subjects[name];
+        if (SEED_SUBJECTS[name]) {
+            subjects[name] = { ...SEED_SUBJECTS[name], failed: info.failed };
+        } else if (info.major === '教養' && info.minor === '外国語') {
+            info.minor = /English|英語/.test(name) ? '外国語第Ⅰ' : '外国語第Ⅱ';
+        } else if (info.major !== '予定' && OLD_TO_NEW[info.minor]) {
+            info.minor = OLD_TO_NEW[info.minor];
+        }
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV8', '1');
+}
+migrateV8();
+
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
     return saved ? JSON.parse(saved) : {};
@@ -312,6 +352,10 @@ function makeTab(label, active, onClick) {
     return btn;
 }
 
+function isFailed(name) {
+    return Boolean(subjects[name] && subjects[name].failed);
+}
+
 function categoryClass(name) {
     const info = subjects[name];
     if (!info) return 'cat-none';
@@ -327,6 +371,7 @@ function buildCell(year, quarter, day, period) {
     btn.setAttribute('aria-label', `${day}曜${period}${typeof period === 'number' ? '限' : ''} ${cell.subject || '空き'}`);
     if (cell.subject) {
         btn.classList.add(categoryClass(cell.subject));
+        if (isFailed(cell.subject)) btn.classList.add('failed');
         const name = document.createElement('span');
         name.className = 'cell-subject';
         // 「線形代数3」の数字だけが次の行に送られないよう、末尾の番号は直前の1文字とくっつける
@@ -403,7 +448,7 @@ function renderExtra() {
     extraEntries(view.year, view.quarter).forEach((entry) => {
         const cell = readCell(view.year, view.quarter, EXTRA_DAY, entry.period);
         const btn = document.createElement('button');
-        btn.className = `extra-item ${categoryClass(cell.subject)}`;
+        btn.className = `extra-item ${categoryClass(cell.subject)}${isFailed(cell.subject) ? ' failed' : ''}`;
         const name = document.createElement('span');
         name.className = 'extra-subject';
         name.textContent = cell.subject;
@@ -429,12 +474,14 @@ const majorSelect = document.getElementById('dialog-major');
 const minorSelect = document.getElementById('dialog-minor');
 const creditsInput = document.getElementById('dialog-credits');
 const allQuartersInput = document.getElementById('dialog-all-quarters');
+const failedInput = document.getElementById('dialog-failed');
 let editing = null;   // いま編集中のコマ { year, quarter, day, period }
 
-// 予定は単位を数えないので単位欄を隠す
+// 予定は単位を数えないので単位欄と落単の欄を隠す
 function updateCreditsVisibility() {
     const isPlan = majorSelect.value === '予定';
     document.getElementById('dialog-credits-label').hidden = isPlan;
+    document.getElementById('dialog-failed-label').hidden = isPlan;
     document.getElementById('dialog-note').textContent = isPlan
         ? '予定は単位の合計には入りません'
         : '区分と単位は同じ科目名のコマすべてに反映されます';
@@ -456,11 +503,12 @@ majorSelect.addEventListener('change', () => {
 });
 
 function showSubjectInfo(name, defaults) {
-    const info = subjects[name] || defaults || { major: '専門', minor: '共通専門', credits: 1 };
+    const info = subjects[name] || defaults || { major: '専門', minor: '選択', credits: 1 };
     majorSelect.value = info.major;
     fillOptions(minorSelect, CATEGORIES[info.major]);
     minorSelect.value = info.minor;
     creditsInput.value = info.credits;
+    failedInput.checked = Boolean(info.failed);
     updateCreditsVisibility();
 }
 // 登録済みの科目名を選んだら区分・単位も合わせる
@@ -517,10 +565,12 @@ document.getElementById('cell-form').addEventListener('submit', () => {
     }
     const name = values.subject.trim();
     if (name) {
+        const isPlan = majorSelect.value === '予定';
         subjects[name] = {
             major: majorSelect.value,
             minor: minorSelect.value,
-            credits: majorSelect.value === '予定' ? 0 : Number(creditsInput.value)
+            credits: isPlan ? 0 : Number(creditsInput.value),
+            failed: !isPlan && failedInput.checked
         };
         saveSubjects(subjects);
     }
@@ -555,37 +605,177 @@ function collectSubjectNames() {
     return names;
 }
 
-function calcTotals() {
-    const totals = {};
+// 時間割に入っている科目は単位を取れたものとして数える(落とした科目と予定は除く)
+function collectCredits() {
+    const earned = {};          // 区分ごとの取れた単位
+    const earnedNames = new Set();
+    const failed = [];
+    const unclassified = [];
     collectSubjectNames().forEach((name) => {
         const info = subjects[name];
-        if (info && info.major === '予定') return;
-        const label = info ? `${info.major}・${info.minor}` : '未分類';
-        const credits = info ? info.credits : 1;
-        totals[label] = (totals[label] || 0) + credits;
+        if (!info) {
+            unclassified.push(name);
+            return;
+        }
+        if (info.major === '予定') return;
+        if (info.failed) {
+            failed.push({ name, ...info });
+            return;
+        }
+        earned[info.minor] = (earned[info.minor] || 0) + info.credits;
+        earnedNames.add(name);
     });
-    return totals;
+    return { earned, earnedNames, failed, unclassified };
+}
+
+// 学生便覧 機械工学科「履修上の注意」(令和8年度入学者)の卒業要件と卒業研究の着手条件
+function calcRequirements({ earned, earnedNames }) {
+    const sum = (...minors) => minors.reduce((s, m) => s + (earned[m] || 0), 0);
+    const hisshu = sum('必修◎');
+    const maru = sum('選択必修○');
+    const sankaku = sum('選択必修△');
+    const commonRequired = sum('共通専門基礎(必修)');
+    const kikai = hisshu + maru + sankaku + sum('選択');
+    const senmon = kikai + commonRequired + sum('共通専門基礎(選択)', '専門基礎', '外国語中級(選択)');
+
+    const kyoyo = [
+        { label: '教養 基盤系', value: sum('基盤系'), need: 4 },
+        {
+            label: '教養 人文・社会・自然・総合系',
+            note: '自然系と総合系は合わせて4単位まで',
+            value: sum('人文系', '社会系') + Math.min(sum('自然系', '総合系'), 4),
+            need: 12
+        },
+        { label: '外国語第Ⅰ（英語）', value: sum('外国語第Ⅰ'), need: 4 },
+        { label: '外国語第Ⅱ', value: sum('外国語第Ⅱ'), need: 4 },
+        { label: '健康・スポーツ科学系', value: sum('健康・スポーツ'), need: 1 }
+    ];
+    const graduation = [
+        ...kyoyo,
+        { label: '専門科目＋全学共通の選択科目', value: senmon, need: 102 },
+        { label: '共通専門基礎の必修', value: commonRequired, need: 4, depth: 1 },
+        { label: '機械工学科専門科目', value: kikai, need: 83, depth: 1 },
+        { label: '必修◎（卒業研究10単位を含む）', value: hisshu, need: 38, depth: 2 },
+        { label: '選択必修○', value: maru, need: 12, depth: 2 },
+        { label: '選択必修△', value: sankaku, need: 4, depth: 2 }
+    ];
+    const total = graduation.filter((r) => !r.depth).reduce((s, r) => s + Math.min(r.value, r.need), 0);
+
+    const labMissing = LAB_REQUIRED.filter((name) => !earnedNames.has(name));
+    const thesis = [
+        {
+            label: '教養科目の卒業に必要な単位をすべて',
+            value: kyoyo.reduce((s, r) => s + Math.min(r.value, r.need), 0),
+            need: kyoyo.reduce((s, r) => s + r.need, 0)
+        },
+        {
+            label: '実験・実習・演習区分の必修科目をすべて',
+            value: LAB_REQUIRED.length - labMissing.length,
+            need: LAB_REQUIRED.length,
+            unit: '科目',
+            note: labMissing.length ? `未修得: ${labMissing.join('、')}` : ''
+        },
+        { label: '必修◎', note: '共通専門基礎の必修を含む', value: hisshu + commonRequired, need: 28 },
+        {
+            label: '必修◎＋選択必修○△',
+            note: '○は12単位、△は4単位まで',
+            value: hisshu + commonRequired + Math.min(maru, 12) + Math.min(sankaku, 4),
+            need: 42
+        },
+        { label: '機械工学科専門科目', value: kikai, need: 61 },
+        { label: '専門科目＋全学共通の選択科目', value: senmon, need: 78 }
+    ];
+    return { graduation, total, thesis };
+}
+
+function makeRequirementRow(row) {
+    const div = document.createElement('div');
+    const done = row.value >= row.need;
+    div.className = `req-row depth-${row.depth || 0}${done ? ' done' : ''}`;
+    const top = document.createElement('div');
+    top.className = 'req-top';
+    const label = document.createElement('span');
+    label.textContent = `${done ? '✓ ' : ''}${row.label}`;
+    const value = document.createElement('span');
+    value.className = 'req-value';
+    value.textContent = `${row.value} / ${row.need}${row.unit || '単位'}`;
+    top.appendChild(label);
+    top.appendChild(value);
+    div.appendChild(top);
+    const bar = document.createElement('div');
+    bar.className = 'req-bar';
+    const fill = document.createElement('div');
+    fill.style.width = `${Math.min(100, (row.value / row.need) * 100)}%`;
+    bar.appendChild(fill);
+    div.appendChild(bar);
+    if (row.note) {
+        const note = document.createElement('div');
+        note.className = 'req-note';
+        note.textContent = row.note;
+        div.appendChild(note);
+    }
+    return div;
+}
+
+function makeSection(title, description) {
+    const section = document.createElement('section');
+    section.className = 'req-section';
+    const h = document.createElement('h3');
+    h.textContent = title;
+    section.appendChild(h);
+    if (description) {
+        const p = document.createElement('p');
+        p.className = 'req-desc';
+        p.textContent = description;
+        section.appendChild(p);
+    }
+    return section;
 }
 
 function renderSummary() {
     const container = document.getElementById('summary');
     container.innerHTML = '';
 
-    const totals = calcTotals();
-    let sum = 0;
-    Object.keys(totals).forEach((label) => {
-        const row = document.createElement('div');
-        row.className = 'summary-row';
-        const name = document.createElement('span');
-        name.textContent = label;
-        const value = document.createElement('span');
-        value.textContent = `${totals[label]}単位`;
-        row.appendChild(name);
-        row.appendChild(value);
-        container.appendChild(row);
-        sum += totals[label];
-    });
-    document.getElementById('total-credits').textContent = sum;
+    const credits = collectCredits();
+    const { graduation, total, thesis } = calcRequirements(credits);
+
+    const grad = makeSection(`卒業要件　${total} / 127単位`,
+        '時間割の科目は単位を取れたものとして数えています（落とした科目は除く）');
+    graduation.forEach((row) => grad.appendChild(makeRequirementRow(row)));
+    container.appendChild(grad);
+
+    const th = makeSection('4年で卒業研究に着手する条件',
+        '機械工学科内規。2年・3年への進級条件は学生便覧にはありません');
+    thesis.forEach((row) => th.appendChild(makeRequirementRow(row)));
+    container.appendChild(th);
+
+    const fail = makeSection(`落とした単位　${credits.failed.reduce((s, f) => s + f.credits, 0)}単位`);
+    if (credits.failed.length) {
+        credits.failed.forEach((f) => {
+            const row = document.createElement('div');
+            row.className = 'summary-row failed-row';
+            const name = document.createElement('span');
+            name.textContent = f.name;
+            const value = document.createElement('span');
+            value.textContent = `${f.major}・${f.minor}　${f.credits}単位`;
+            row.appendChild(name);
+            row.appendChild(value);
+            fail.appendChild(row);
+        });
+    } else {
+        const none = document.createElement('p');
+        none.className = 'req-desc';
+        none.textContent = 'なし（コマの編集画面で「単位を落とした」にチェックすると、ここに出ます）';
+        fail.appendChild(none);
+    }
+    container.appendChild(fail);
+
+    if (credits.unclassified.length) {
+        const un = makeSection('区分が未設定の科目（単位に数えていません）', credits.unclassified.join('、'));
+        container.appendChild(un);
+    }
+
+    document.getElementById('total-credits').textContent = total;
 }
 
 const summaryToggle = document.getElementById('summary-toggle');
@@ -598,16 +788,12 @@ summaryToggle.addEventListener('click', () => {
 function renderLegend() {
     const legend = document.getElementById('legend');
     legend.innerHTML = '';
-    Object.keys(CATEGORY_CLASS).forEach((minor) => {
+    LEGEND.forEach(([label, className]) => {
         const item = document.createElement('span');
-        item.className = `legend-item ${CATEGORY_CLASS[minor]}`;
-        item.textContent = minor;
+        item.className = `legend-item ${className}`;
+        item.textContent = label;
         legend.appendChild(item);
     });
-    const plan = document.createElement('span');
-    plan.className = 'legend-item cat-plan';
-    plan.textContent = '予定';
-    legend.appendChild(plan);
 }
 
 // 左右スワイプでクォーターを切り替える(4Qの次は次の学年の1Q)
