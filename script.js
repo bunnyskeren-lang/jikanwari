@@ -169,6 +169,35 @@ function migrateV4() {
 }
 migrateV4();
 
+// 物理学概論Ⅰは1年2Qの月曜・水曜2限に戻し、1年のそれ以外の物理学概論は消す(一度だけ)
+function migrateV5() {
+    if (localStorage.getItem('migratedV5')) return;
+    const isPhysics = (name) => normalizeName(name || '').startsWith('物理学概論');
+    const keep = SEED_CELLS.filter((cell) => cell.year === 1 && cell.subject === '物理学概論Ⅰ');
+    QUARTERS.forEach((quarter) => {
+        DAYS.forEach((day) => {
+            PERIODS.forEach((period) => {
+                const prefix = `cell-1-${quarter}-${day}-${period}-`;
+                const kept = keep.some((c) => c.quarter === quarter && c.day === day && c.period === period);
+                if (!kept && isPhysics(localStorage.getItem(prefix + 'subject'))) {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+    });
+    keep.forEach((cell) => {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        const current = (localStorage.getItem(prefix + 'subject') || '').trim();
+        if (current && !isPhysics(current)) return;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    if (!subjects['物理学概論Ⅰ']) subjects['物理学概論Ⅰ'] = SEED_SUBJECTS['物理学概論Ⅰ'];
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV5', '1');
+}
+migrateV5();
+
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
     return saved ? JSON.parse(saved) : {};

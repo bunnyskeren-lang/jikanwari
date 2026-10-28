@@ -144,6 +144,8 @@ const SEED_CELLS = [
     {"year":1,"quarter":3,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
     {"year":1,"quarter":4,"day":"月","period":"放課後","subject":"起業部","teacher":"","room":""},
     {"year":1,"quarter":4,"day":"木","period":"放課後","subject":"起業部","teacher":"","room":""},
+    {"year":1,"quarter":2,"day":"月","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
+    {"year":1,"quarter":2,"day":"水","period":2,"subject":"物理学概論Ⅰ","teacher":"田中（克）","room":"LR301"},
 ];
 
 const SEED_SUBJECTS = {
