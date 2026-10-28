@@ -1014,31 +1014,6 @@ function registeredCredits(year) {
     return total;
 }
 
-// その学年までに取れた単位(落とした科目・予定は除き、同じ科目は1回だけ数える)
-function earnedCreditsUpTo(maxYear) {
-    const names = new Set();
-    for (let i = 0; i < localStorage.length; i++) {
-        const m = localStorage.key(i).match(/^cell-(\d)-.*-subject$/);
-        if (!m || Number(m[1]) > maxYear) continue;
-        const name = (localStorage.getItem(localStorage.key(i)) || '').trim();
-        if (name) names.add(name);
-    }
-    let total = 0;
-    names.forEach((name) => {
-        const info = subjects[name];
-        if (info && info.major !== '予定' && !info.failed) total += info.credits;
-    });
-    return total;
-}
-// その学年までに配当されている必修科目(時間割表と便覧の◎)
-function requiredNamesUpTo(maxYear) {
-    const names = SEED_CELLS
-        .filter((c) => c.year <= maxYear && SEED_SUBJECTS[c.subject]
-            && ['必修◎', '共通専門基礎(必修)'].includes(SEED_SUBJECTS[c.subject].minor))
-        .map((c) => c.subject);
-    return [...new Set(names)];
-}
-
 // 1行分: 左から「✓/●」「項目名」「取った / 必要」を続けて並べ、その下に短いバーと「あと○単位」を出す
 // (左右の端に分けると視線が行き来して読みにくいので、すべて左に寄せる)
 function makeRequirementRow(row) {
@@ -1196,24 +1171,6 @@ function renderSummary() {
     thesis.forEach((row) => th.appendChild(makeRequirementRow(row)));
     th.appendChild(makeFootnote('機械工学科内規'));
     container.appendChild(th);
-
-    // 早期履修(上の学年の科目を早めに取る)の条件。便覧に2年・3年への進級条件はないので参考として出す
-    const early = makeCard('参考：早期履修の条件', '', false);
-    [[1, 40, '2年次生'], [2, 80, '3年次生']].forEach(([upTo, need, label]) => {
-        early.appendChild(makeGroupTitle(label));
-        early.appendChild(makeRequirementRow({ label: `${upTo === 1 ? '1年次' : '2年次まで'}に修得した単位`, value: earnedCreditsUpTo(upTo), need }));
-        const required = requiredNamesUpTo(upTo);
-        const missing = required.filter((name) => !credits.earnedNames.has(name));
-        early.appendChild(makeRequirementRow({
-            label: `${upTo === 1 ? '1年次' : '1・2年次'}の必修科目`,
-            value: required.length - missing.length,
-            need: required.length,
-            unit: '科目',
-            note: missing.length ? `未修得: ${missing.join('、')}` : ''
-        }));
-    });
-    early.appendChild(makeFootnote('2年・3年への進級条件は便覧にありません。これは上の学年の科目を早めに履修するための条件です（工学部 早期履修に関する内規）。成績（90%以上が秀・優）はアプリでは確かめられません'));
-    container.appendChild(early);
 
     // 落とした単位は人に見られたくないので、トグルをオンにしたときだけ中身を出す
     const fail = makeCard('落とした単位', showFailed()
