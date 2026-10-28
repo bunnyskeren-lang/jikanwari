@@ -1244,6 +1244,36 @@ main.addEventListener('touchend', (e) => {
     setView(Math.floor(index / 4) + 1, (index % 4) + 1);
 });
 
+// 保存している時間割を JSON に書き出す(PC の tools\phone-import が録音の振り分けに使う)
+function collectAllCells() {
+    const cells = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const m = localStorage.key(i).match(/^cell-(\d)-(\d)-(.+)-(.+)-subject$/);
+        if (!m) continue;
+        const [, year, quarter, day, period] = m;
+        const cell = readCell(year, quarter, day, period);
+        if (!cell.subject) continue;
+        cells.push({ year: Number(year), quarter: Number(quarter), day,
+            period: /^\d+$/.test(period) ? Number(period) : period, ...cell });
+    }
+    return cells.sort((a, b) => a.year - b.year || a.quarter - b.quarter
+        || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || String(a.period).localeCompare(String(b.period)));
+}
+document.getElementById('export-button').addEventListener('click', async () => {
+    const data = { app: 'jikanwari', exportedAt: new Date().toISOString(), cells: collectAllCells(), subjects };
+    const file = new File([JSON.stringify(data, null, 1)], '時間割.json', { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file] }); } catch (e) { /* 共有をキャンセルしたとき */ }
+        return;
+    }
+    // 共有できないブラウザ(PC など)はダウンロードにする
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(file);
+    link.download = file.name;
+    link.click();
+    URL.revokeObjectURL(link.href);
+});
+
 function refresh() {
     renderTimetable();
     renderSummary();
