@@ -14,7 +14,7 @@ const FIELDS = ['subject', 'room', 'teacher'];
 
 const CATEGORIES = {
     '専門': ['共通専門', '必修', '選択必修', 'その他'],
-    '教養': ['人文社会', '総合系']
+    '教養': ['人文社会', '総合系', '外国語']
 };
 // 分類ごとの色(style.css の .cat-xxx)
 const CATEGORY_CLASS = {
@@ -23,7 +23,8 @@ const CATEGORY_CLASS = {
     '選択必修': 'cat-elective',
     'その他': 'cat-other',
     '人文社会': 'cat-liberal',
-    '総合系': 'cat-general'
+    '総合系': 'cat-general',
+    '外国語': 'cat-language'
 };
 
 // seed.js の時間割を空いているコマにだけ入れる(一度だけ)
@@ -46,6 +47,63 @@ function applySeed() {
     localStorage.setItem('seededKikai2026', '1');
 }
 applySeed();
+
+// 科目名の比較用(空白・全角英数字の違いを無視する)
+function normalizeName(name) {
+    return name.replace(/\s/g, '')
+        .replace(/[０-９Ａ-Ｚａ-ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));
+}
+function looksLikeRoom(text) {
+    return /[0-9０-９]/.test(text);
+}
+
+// 保存済みのデータを直す(一度だけ)
+// ・教員欄に入っている教室(K401など)を教室欄へ移す
+// ・「線形代数」「線形代数１」などを seed.js の「線形代数3」のような名前にそろえる
+// ・空いているコマに追加分(フランス語など)を入れ、空の教員・教室を埋める
+function migrateV2() {
+    if (localStorage.getItem('migratedV2')) return;
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key.startsWith('cell-') || !key.endsWith('-teacher')) continue;
+        const prefix = key.slice(0, -'teacher'.length);
+        const teacher = (localStorage.getItem(key) || '').trim();
+        const room = (localStorage.getItem(prefix + 'room') || '').trim();
+        if (teacher && looksLikeRoom(teacher) && !looksLikeRoom(room)) {
+            localStorage.setItem(prefix + 'room', teacher);
+            localStorage.setItem(key, room);
+        }
+    }
+
+    SEED_CELLS.forEach((cell) => {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        const current = (localStorage.getItem(prefix + 'subject') || '').trim();
+        const seedName = normalizeName(cell.subject);
+        const currentName = normalizeName(current);
+        const sameSubject = currentName === seedName || currentName === seedName.replace(/[0-9]+$/, '');
+        if (current && !sameSubject) return;
+        if (current && current !== cell.subject) {
+            if (!subjects[cell.subject] && subjects[current]) subjects[cell.subject] = subjects[current];
+        }
+        localStorage.setItem(prefix + 'subject', cell.subject);
+        if (!(localStorage.getItem(prefix + 'room') || '').trim()) localStorage.setItem(prefix + 'room', cell.room);
+        if (!(localStorage.getItem(prefix + 'teacher') || '').trim()) localStorage.setItem(prefix + 'teacher', cell.teacher);
+    });
+
+    // 使われなくなった古い科目名(全角数字など)の区分を消し、新しい名前の区分を入れる
+    Object.keys(subjects).forEach((name) => {
+        const fixed = normalizeName(name);
+        if (fixed !== name && SEED_SUBJECTS[fixed]) delete subjects[name];
+    });
+    Object.keys(SEED_SUBJECTS).forEach((name) => {
+        if (!subjects[name]) subjects[name] = SEED_SUBJECTS[name];
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV2', '1');
+}
+migrateV2();
 
 function loadSubjects() {
     const saved = localStorage.getItem('subjects');
@@ -120,7 +178,17 @@ function buildCell(year, quarter, day, period) {
         btn.classList.add(info ? CATEGORY_CLASS[info.minor] || 'cat-other' : 'cat-none');
         const name = document.createElement('span');
         name.className = 'cell-subject';
-        name.textContent = cell.subject;
+        // 「線形代数3」の数字だけが次の行に送られないよう、末尾の番号は直前の1文字とくっつける
+        const match = cell.subject.match(/^(.*?)(.[0-9A-Za-zⅠⅡⅢⅣ]+)$/);
+        if (match) {
+            name.appendChild(document.createTextNode(match[1]));
+            const tail = document.createElement('span');
+            tail.className = 'nowrap';
+            tail.textContent = match[2];
+            name.appendChild(tail);
+        } else {
+            name.textContent = cell.subject;
+        }
         btn.appendChild(name);
         if (cell.room) {
             const room = document.createElement('span');

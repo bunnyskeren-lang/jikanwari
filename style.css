@@ -15,6 +15,7 @@
     --c-other: #ece8f8;    --c-other-bar: #7c6bc4;
     --c-liberal: #fff0d9;  --c-liberal-bar: #e0912a;
     --c-general: #fbe4f1;  --c-general-bar: #c8559a;
+    --c-language: #d7f3f1; --c-language-bar: #1f9e95;
     --c-none: #eceff3;     --c-none-bar: #9aa3af;
 }
 @media (prefers-color-scheme: dark) {
@@ -35,6 +36,7 @@
         --c-other: #322b4d;
         --c-liberal: #45351c;
         --c-general: #45233a;
+        --c-language: #17403d;
         --c-none: #2a2f39;
     }
 }
@@ -172,7 +174,7 @@ td.today .cell.empty {
     height: 100%;
     border: none;
     border-radius: 6px;
-    padding: 4px 3px 4px 5px;
+    padding: 4px 2px 4px 4px;
     text-align: left;
     overflow: hidden;
     border-left: 3px solid transparent;
@@ -183,7 +185,8 @@ td.today .cell.empty {
     border: 1px dashed var(--line);
 }
 .cell-subject {
-    font-size: 11px;
+    font-size: 10.5px;
+    letter-spacing: -0.02em;
     font-weight: bold;
     line-height: 1.25;
     display: -webkit-box;
@@ -191,6 +194,9 @@ td.today .cell.empty {
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-all;
+}
+.nowrap {
+    white-space: nowrap;
 }
 .cell-room {
     margin-top: auto;
@@ -207,6 +213,7 @@ td.today .cell.empty {
 .cat-other    { background: var(--c-other);    border-left-color: var(--c-other-bar); }
 .cat-liberal  { background: var(--c-liberal);  border-left-color: var(--c-liberal-bar); }
 .cat-general  { background: var(--c-general);  border-left-color: var(--c-general-bar); }
+.cat-language { background: var(--c-language); border-left-color: var(--c-language-bar); }
 .cat-none     { background: var(--c-none);     border-left-color: var(--c-none-bar); }
 
 .hint {
