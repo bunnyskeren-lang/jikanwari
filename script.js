@@ -27,7 +27,7 @@ const CATEGORY_CLASS = {
     '専門基礎': 'cat-common',
     '必修◎': 'cat-required',
     '選択必修○': 'cat-elective',
-    '選択必修△': 'cat-elective',
+    '選択必修△': 'cat-elective-b',
     '選択': 'cat-other',
     '基盤系': 'cat-liberal',
     '人文系': 'cat-liberal',
@@ -41,7 +41,8 @@ const CATEGORY_CLASS = {
     '卒業要件外': 'cat-none'
 };
 const LEGEND = [
-    ['共通専門基礎・専門基礎', 'cat-common'], ['必修◎', 'cat-required'], ['選択必修○△', 'cat-elective'],
+    ['共通専門基礎・専門基礎', 'cat-common'], ['必修◎', 'cat-required'], ['選択必修○', 'cat-elective'],
+    ['選択必修△', 'cat-elective-b'],
     ['選択', 'cat-other'], ['教養', 'cat-liberal'], ['総合系', 'cat-general'], ['外国語', 'cat-language'], ['予定', 'cat-plan']
 ];
 // 卒業研究に着手するために全部取る必要がある「実験・実習・演習」区分の必修科目
@@ -504,6 +505,18 @@ function isFailedShown(name) {
     return showFailed() && isFailed(name);
 }
 
+// 便覧の印(◎必修・○△選択必修)をコマの右上に出す
+const CATEGORY_MARK = { '共通専門基礎(必修)': '◎', '必修◎': '◎', '選択必修○': '○', '選択必修△': '△' };
+function makeMark(name) {
+    const info = subjects[name];
+    const mark = info && CATEGORY_MARK[info.minor];
+    if (!mark) return null;
+    const span = document.createElement('span');
+    span.className = 'cell-mark';
+    span.textContent = mark;
+    return span;
+}
+
 function categoryClass(name) {
     const info = subjects[name];
     if (!info) return 'cat-none';
@@ -520,6 +533,8 @@ function buildCell(year, quarter, day, period) {
     if (cell.subject) {
         btn.classList.add(categoryClass(cell.subject));
         if (isFailedShown(cell.subject)) btn.classList.add('failed');
+        const mark = makeMark(cell.subject);
+        if (mark) btn.appendChild(mark);
         const name = document.createElement('span');
         name.className = 'cell-subject';
         // 「線形代数3」の数字だけが次の行に送られないよう、末尾の番号は直前の1文字とくっつける
@@ -603,6 +618,8 @@ function renderExtra() {
         const sub = document.createElement('span');
         sub.className = 'extra-sub';
         sub.textContent = [cell.teacher, cell.room].filter((s) => s).join(' ・ ');
+        const mark = makeMark(cell.subject);
+        if (mark) btn.appendChild(mark);
         btn.appendChild(name);
         btn.appendChild(sub);
         btn.addEventListener('click', () => openCellDialog(view.year, view.quarter, EXTRA_DAY, entry.period));

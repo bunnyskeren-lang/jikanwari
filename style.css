@@ -16,6 +16,7 @@
     --c-liberal: #fff0d9;  --c-liberal-bar: #e0912a;
     --c-general: #fbe4f1;  --c-general-bar: #c8559a;
     --c-language: #d7f3f1; --c-language-bar: #1f9e95;
+    --c-elective-b: #fff1c2; --c-elective-b-bar: #c99a12;
     --c-plan: #f1ece4;     --c-plan-bar: #8a6a3f;
     --c-none: #eceff3;     --c-none-bar: #9aa3af;
 }
@@ -39,6 +40,7 @@
         --c-general: #45233a;
         --c-language: #17403d;
         --c-plan: #3a3226;
+        --c-elective-b: #3f3514;
         --c-none: #2a2f39;
     }
 }
@@ -268,6 +270,20 @@ td.today .cell.empty {
     background: var(--surface);
     border: 1px dashed var(--line);
 }
+.cell,
+.extra-item {
+    position: relative;
+}
+/* 科目名とぶつからないよう右下に置く(教室名は右側を空けておく) */
+.cell-mark {
+    position: absolute;
+    bottom: 4px;
+    right: 3px;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1;
+    color: var(--muted);
+}
 .cell-subject {
     font-size: 10.5px;
     letter-spacing: -0.02em;
@@ -308,6 +324,7 @@ td.today .cell.empty {
 }
 .cell-room {
     margin-top: auto;
+    padding-right: 10px;
     font-size: 9px;
     color: var(--muted);
     white-space: nowrap;
@@ -322,6 +339,7 @@ td.today .cell.empty {
 .cat-liberal  { background: var(--c-liberal);  border-left-color: var(--c-liberal-bar); }
 .cat-general  { background: var(--c-general);  border-left-color: var(--c-general-bar); }
 .cat-language { background: var(--c-language); border-left-color: var(--c-language-bar); }
+.cat-elective-b { background: var(--c-elective-b); border-left-color: var(--c-elective-b-bar); }
 .cat-plan     { background: var(--c-plan);     border-left-color: var(--c-plan-bar); }
 .cat-none     { background: var(--c-none);     border-left-color: var(--c-none-bar); }
 
