@@ -371,6 +371,32 @@ function migrateV11() {
 }
 migrateV11();
 
+// 1年1Qに取った教養科目(基盤系)4科目を入れる(一度だけ)
+function migrateV12() {
+    if (localStorage.getItem('migratedV12')) return;
+    const kiban = SEED_CELLS.filter((c) => SEED_SUBJECTS[c.subject] && SEED_SUBJECTS[c.subject].minor === '基盤系');
+    if (kiban.length < 4) return;   // 古い seed.js が読み込まれたときは次回に回す
+    kiban.forEach((cell) => {
+        if (cell.day === EXTRA_DAY) {
+            if (extraEntries(cell.year, cell.quarter).some((e) => e.subject === cell.subject)) return;
+            const prefix = `cell-${cell.year}-${cell.quarter}-${EXTRA_DAY}-${nextExtraPeriod(cell.year, cell.quarter)}-`;
+            FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+            return;
+        }
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        const current = (localStorage.getItem(prefix + 'subject') || '').trim();
+        if (current && current !== cell.subject) return;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    kiban.forEach((cell) => {
+        subjects[cell.subject] = { ...SEED_SUBJECTS[cell.subject], failed: subjects[cell.subject] && subjects[cell.subject].failed };
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV12', '1');
+}
+migrateV12();
+
 // 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
 // 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
 // 再履修クラスは別のクォーターにあるので、番号から決まるクォーターと時間割表のクォーターの両方を認める
