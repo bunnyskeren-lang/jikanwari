@@ -355,6 +355,13 @@ function makeTab(label, active, onClick) {
 function isFailed(name) {
     return Boolean(subjects[name] && subjects[name].failed);
 }
+// 落単は人に見られたくないので、トグルをオンにしたときだけ表示する(初期値はオフ)
+function showFailed() {
+    return localStorage.getItem('showFailed') === '1';
+}
+function isFailedShown(name) {
+    return showFailed() && isFailed(name);
+}
 
 function categoryClass(name) {
     const info = subjects[name];
@@ -371,7 +378,7 @@ function buildCell(year, quarter, day, period) {
     btn.setAttribute('aria-label', `${day}曜${period}${typeof period === 'number' ? '限' : ''} ${cell.subject || '空き'}`);
     if (cell.subject) {
         btn.classList.add(categoryClass(cell.subject));
-        if (isFailed(cell.subject)) btn.classList.add('failed');
+        if (isFailedShown(cell.subject)) btn.classList.add('failed');
         const name = document.createElement('span');
         name.className = 'cell-subject';
         // 「線形代数3」の数字だけが次の行に送られないよう、末尾の番号は直前の1文字とくっつける
@@ -448,7 +455,7 @@ function renderExtra() {
     extraEntries(view.year, view.quarter).forEach((entry) => {
         const cell = readCell(view.year, view.quarter, EXTRA_DAY, entry.period);
         const btn = document.createElement('button');
-        btn.className = `extra-item ${categoryClass(cell.subject)}${isFailed(cell.subject) ? ' failed' : ''}`;
+        btn.className = `extra-item ${categoryClass(cell.subject)}${isFailedShown(cell.subject) ? ' failed' : ''}`;
         const name = document.createElement('span');
         name.className = 'extra-subject';
         name.textContent = cell.subject;
@@ -749,8 +756,21 @@ function renderSummary() {
     thesis.forEach((row) => th.appendChild(makeRequirementRow(row)));
     container.appendChild(th);
 
-    const fail = makeSection(`落とした単位　${credits.failed.reduce((s, f) => s + f.credits, 0)}単位`);
-    if (credits.failed.length) {
+    const fail = makeSection(showFailed()
+        ? `落とした単位　${credits.failed.reduce((s, f) => s + f.credits, 0)}単位`
+        : '落とした単位');
+    const toggle = document.createElement('button');
+    toggle.className = 'toggle';
+    toggle.setAttribute('role', 'switch');
+    toggle.setAttribute('aria-checked', String(showFailed()));
+    toggle.textContent = showFailed() ? '表示中（タップで隠す）' : '隠しています（タップで表示）';
+    toggle.addEventListener('click', () => {
+        localStorage.setItem('showFailed', showFailed() ? '0' : '1');
+        refresh();
+    });
+    fail.appendChild(toggle);
+    // 隠しているときは一覧を出さない(時間割の赤い印も isFailedShown で消える)
+    if (showFailed() && credits.failed.length) {
         credits.failed.forEach((f) => {
             const row = document.createElement('div');
             row.className = 'summary-row failed-row';
@@ -762,7 +782,7 @@ function renderSummary() {
             row.appendChild(value);
             fail.appendChild(row);
         });
-    } else {
+    } else if (showFailed()) {
         const none = document.createElement('p');
         none.className = 'req-desc';
         none.textContent = 'なし（コマの編集画面で「単位を落とした」にチェックすると、ここに出ます）';
