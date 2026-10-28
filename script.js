@@ -101,6 +101,27 @@ function renderTimetables(times) {
     });
 }
 
+// seed.js の時間割を空いているコマにだけ入れる(一度だけ)
+function applySeed() {
+    if (localStorage.getItem('seededKikai2026')) return;
+    SEED_CELLS.forEach((cell) => {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        const current = localStorage.getItem(prefix + 'subject');
+        if (current && current.trim()) return;
+        localStorage.setItem(prefix + 'subject', cell.subject);
+        localStorage.setItem(prefix + 'room', cell.room);
+        localStorage.setItem(prefix + 'teacher', cell.teacher);
+    });
+    const saved = localStorage.getItem('subjects');
+    const subjects = saved ? JSON.parse(saved) : {};
+    Object.keys(SEED_SUBJECTS).forEach((name) => {
+        if (!subjects[name]) subjects[name] = SEED_SUBJECTS[name];
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('seededKikai2026', '1');
+}
+applySeed();
+
 const periodTimes = loadPeriodTimes();
 renderPeriodTimeInputs(periodTimes);
 renderTimetables(periodTimes);
