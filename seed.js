@@ -1,6 +1,6 @@
 // 機械工学科の時間割（2026年度 工学部時間割表 1Q〜4Q・学籍番号奇数）
 // 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)・Academic English(1Qは対面55クラス、2Q〜4Qは遠隔クラス)は教養教育院の2026年度時間割による
-// 1年4Qの教養科目は履修登録画面より。線形代数3・4は2年の再履修クラス(前期 木曜5限)で取る
+// 1年4Qの教養科目は履修登録画面より。線形代数3・4は2年の再履修クラス(前期 木曜5限)で取る。物理学実験は履修しない
 // 単位数と区分は 2026 学生便覧 別表第1ホ・機械工学科 履修科目一覧表（◎必修・○△選択必修）による
 const SEED_CELLS = [
     {"year":1,"quarter":1,"day":"火","period":1,"subject":"微分積分1","teacher":"桔梗","room":"B109"},
@@ -27,8 +27,6 @@ const SEED_CELLS = [
     {"year":1,"quarter":3,"day":"火","period":2,"subject":"微分積分3","teacher":"増淵","room":"K401"},
     {"year":1,"quarter":3,"day":"火","period":3,"subject":"数理統計1","teacher":"貝野","room":"K301"},
     {"year":1,"quarter":3,"day":"火","period":4,"subject":"ベクトル解析","teacher":"佐野","room":"C3-302"},
-    {"year":1,"quarter":3,"day":"水","period":3,"subject":"物理学実験","teacher":"鈴木","room":""},
-    {"year":1,"quarter":3,"day":"水","period":4,"subject":"物理学実験","teacher":"鈴木","room":""},
     {"year":1,"quarter":3,"day":"木","period":1,"subject":"フランス語初級B3","teacher":"武内","room":"D615"},
     {"year":1,"quarter":3,"day":"木","period":3,"subject":"基礎力学Ⅱ","teacher":"田川・長谷部","room":"LR201"},
     {"year":1,"quarter":3,"day":"木","period":4,"subject":"情報科学1","teacher":"片山","room":"B210"},
@@ -40,8 +38,6 @@ const SEED_CELLS = [
     {"year":1,"quarter":4,"day":"火","period":2,"subject":"微分積分4","teacher":"増淵","room":"K401"},
     {"year":1,"quarter":4,"day":"火","period":3,"subject":"数理統計2","teacher":"貝野","room":"K301"},
     {"year":1,"quarter":4,"day":"火","period":4,"subject":"ベクトル解析","teacher":"佐野","room":"C3-302"},
-    {"year":1,"quarter":4,"day":"水","period":3,"subject":"物理学実験","teacher":"鈴木","room":""},
-    {"year":1,"quarter":4,"day":"水","period":4,"subject":"物理学実験","teacher":"鈴木","room":""},
     {"year":1,"quarter":4,"day":"木","period":1,"subject":"フランス語初級B4","teacher":"武内","room":"D615"},
     {"year":1,"quarter":4,"day":"木","period":4,"subject":"情報科学2","teacher":"片山","room":"B210"},
     {"year":1,"quarter":4,"day":"金","period":2,"subject":"材料力学Ⅰ","teacher":"塩澤","room":"鶴1B110"},

@@ -354,6 +354,23 @@ function migrateV10() {
 }
 migrateV10();
 
+// 物理学実験は履修していないので1年から消す(一度だけ)
+function migrateV11() {
+    if (localStorage.getItem('migratedV11')) return;
+    QUARTERS.forEach((quarter) => {
+        DAYS.forEach((day) => {
+            PERIODS.forEach((period) => {
+                const prefix = `cell-1-${quarter}-${day}-${period}-`;
+                if (normalizeName(localStorage.getItem(prefix + 'subject') || '') === '物理学実験') {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+    });
+    localStorage.setItem('migratedV11', '1');
+}
+migrateV11();
+
 // 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
 // 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
 // 再履修クラスは別のクォーターにあるので、番号から決まるクォーターと時間割表のクォーターの両方を認める
