@@ -504,6 +504,24 @@ function migrateV14() {
 }
 migrateV14();
 
+// 卒業研究は曜日・時限がないので、4年の時間外に入れて取れた前提で数える(一度だけ)
+function migrateV15() {
+    if (localStorage.getItem('migratedV15')) return;
+    const cell = SEED_CELLS.find((c) => c.subject === '卒業研究');
+    if (!cell) return;   // 古い seed.js が読み込まれたときは次回に回す
+    const exists = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i))
+        .some((key) => /^cell-.*-subject$/.test(key) && normalizeName(localStorage.getItem(key) || '') === '卒業研究');
+    if (!exists) {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${EXTRA_DAY}-${nextExtraPeriod(cell.year, cell.quarter)}-`;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    }
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    if (!subjects['卒業研究']) subjects['卒業研究'] = SEED_SUBJECTS['卒業研究'];
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV15', '1');
+}
+migrateV15();
+
 // 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
 // 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
 // 再履修クラスは別のクォーターにあるので、番号から決まるクォーターと時間割表のクォーターの両方を認める
@@ -965,6 +983,8 @@ function calcRequirements({ earned, earnedNames }) {
     const total = graduation.filter((r) => !r.depth).reduce((s, r) => s + Math.min(r.value, r.need), 0);
 
     const labMissing = LAB_REQUIRED.filter((name) => !earnedNames.has(name));
+    // 着手条件は卒業研究を始める前の条件なので、卒業研究の単位は除いて数える
+    const thesisCredits = earnedNames.has('卒業研究') ? (subjects['卒業研究'] || SEED_SUBJECTS['卒業研究']).credits : 0;
     const thesis = [
         {
             label: '教養の卒業要件をすべて',
@@ -978,14 +998,14 @@ function calcRequirements({ earned, earnedNames }) {
             unit: '科目',
             note: labMissing.length ? `未修得: ${labMissing.join('、')}` : ''
         },
-        { label: '必修◎（共通専門基礎を含む）', value: hisshu + commonRequired, need: 28 },
+        { label: '必修◎（共通専門基礎を含む）', value: hisshu - thesisCredits + commonRequired, need: 28 },
         {
             label: '必修◎＋選択必修○△',
-            value: hisshu + commonRequired + Math.min(maru, 12) + Math.min(sankaku, 4),
+            value: hisshu - thesisCredits + commonRequired + Math.min(maru, 12) + Math.min(sankaku, 4),
             need: 42
         },
-        { label: '機械工学科専門科目', value: kikai, need: 61 },
-        { label: '専門＋全学共通の選択', value: senmon, need: 78 }
+        { label: '機械工学科専門科目', value: kikai - thesisCredits, need: 61 },
+        { label: '専門＋全学共通の選択', value: senmon - thesisCredits, need: 78 }
     ];
     return { graduation, total, thesis };
 }
