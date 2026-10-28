@@ -482,6 +482,28 @@ function migrateV13() {
 }
 migrateV13();
 
+// 線形代数3・4の再履修クラスはオンデマンドなので、2年の木曜5限から時間外へ移す(一度だけ)
+function migrateV14() {
+    if (localStorage.getItem('migratedV14')) return;
+    const retake = SEED_CELLS.filter((c) => c.year === 2 && c.day === EXTRA_DAY && ['線形代数3', '線形代数4'].includes(c.subject));
+    if (retake.length < 2) return;   // 古い seed.js が読み込まれたときは次回に回す
+    retake.forEach((cell) => {
+        DAYS.forEach((day) => {
+            PERIODS.forEach((period) => {
+                const prefix = `cell-2-${cell.quarter}-${day}-${period}-`;
+                if (normalizeName(localStorage.getItem(prefix + 'subject') || '') === cell.subject) {
+                    FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+                }
+            });
+        });
+        if (extraEntries(2, cell.quarter).some((e) => normalizeName(e.subject) === cell.subject)) return;
+        const prefix = `cell-2-${cell.quarter}-${EXTRA_DAY}-${nextExtraPeriod(2, cell.quarter)}-`;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    localStorage.setItem('migratedV14', '1');
+}
+migrateV14();
+
 // 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
 // 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
 // 再履修クラスは別のクォーターにあるので、番号から決まるクォーターと時間割表のクォーターの両方を認める
@@ -659,6 +681,12 @@ function buildCell(year, quarter, day, period) {
             room.className = 'cell-room';
             room.textContent = cell.room;
             btn.appendChild(room);
+        }
+        if (cell.teacher) {
+            const teacher = document.createElement('span');
+            teacher.className = 'cell-teacher';
+            teacher.textContent = cell.teacher;
+            btn.appendChild(teacher);
         }
     } else {
         btn.classList.add('empty');

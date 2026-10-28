@@ -247,7 +247,7 @@ tr:last-child .period-label {
 }
 td {
     padding: 0;
-    height: 74px;
+    height: 84px;
     vertical-align: top;
 }
 td.today .cell.empty {
@@ -322,14 +322,27 @@ td.today .cell.empty {
 .nowrap {
     white-space: nowrap;
 }
-.cell-room {
-    margin-top: auto;
+/* 教室と先生は下にそろえて、小さく目立たない色で出す */
+.cell-room,
+.cell-teacher {
     padding-right: 10px;
     font-size: 9px;
+    line-height: 1.25;
     color: var(--muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.cell-room {
+    margin-top: auto;
+}
+.cell-room + .cell-teacher {
+    margin-top: 0;
+}
+.cell-teacher {
+    margin-top: auto;
+    font-size: 8.5px;
+    opacity: 0.85;
 }
 
 .cat-common   { background: var(--c-common);   border-left-color: var(--c-common-bar); }

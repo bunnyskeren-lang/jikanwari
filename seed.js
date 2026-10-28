@@ -1,6 +1,6 @@
 // 機械工学科の時間割（2026年度 工学部時間割表 1Q〜4Q・学籍番号奇数）
 // 共通専門基礎科目・外国語第Ⅱ(フランス語 17クラス)・Academic English(1Qは対面55クラス、2Q〜4Qは遠隔クラス)は教養教育院の2026年度時間割による
-// 1年4Qの教養科目は履修登録画面より。線形代数3・4は2年の再履修クラス(前期 木曜5限)で取る。物理学実験は履修しない
+// 1年4Qの教養科目は履修登録画面より。線形代数3・4は2年の再履修クラス(前期・オンデマンド)で取る。物理学実験は履修しない
 // 教養科目(基盤系)4科目は1年1Qに取り切った(教養教育院 令和8年度1Q時間割より)
 // 単位数と区分は 2026 学生便覧 別表第1ホ・機械工学科 履修科目一覧表（◎必修・○△選択必修）による
 const SEED_CELLS = [
@@ -147,8 +147,8 @@ const SEED_CELLS = [
     {"year":1,"quarter":3,"day":"時間外","period":2,"subject":"Academic English Literacy B1","teacher":"横川","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":4,"day":"時間外","period":1,"subject":"Academic English Communication B2","teacher":"TAN JOY ANN FAITH FRANCISCO","room":"オンデマンド(遠隔)"},
     {"year":1,"quarter":4,"day":"時間外","period":2,"subject":"Academic English Literacy B2","teacher":"横川","room":"オンデマンド(遠隔)"},
-    {"year":2,"quarter":1,"day":"木","period":5,"subject":"線形代数3","teacher":"比嘉 隆二（再履修クラス 1U784）","room":""},
-    {"year":2,"quarter":2,"day":"木","period":5,"subject":"線形代数4","teacher":"比嘉 隆二（再履修クラス 2U784）","room":""},
+    {"year":2,"quarter":1,"day":"時間外","period":1,"subject":"線形代数3","teacher":"比嘉 隆二（再履修クラス 1U784）","room":"オンデマンド"},
+    {"year":2,"quarter":2,"day":"時間外","period":1,"subject":"線形代数4","teacher":"比嘉 隆二（再履修クラス 2U784）","room":"オンデマンド"},
     {"year":1,"quarter":4,"day":"月","period":1,"subject":"政治学B","teacher":"安岡","room":"K402"},
     {"year":1,"quarter":4,"day":"水","period":1,"subject":"西洋史B","teacher":"小澤","room":"C201"},
     {"year":1,"quarter":4,"day":"水","period":2,"subject":"言語科学B","teacher":"南","room":"B201"},
