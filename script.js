@@ -398,6 +398,90 @@ function migrateV12() {
 }
 migrateV12();
 
+// 便覧の教養科目一覧などから科目の区分を引く(全角・半角の違いは無視)
+function lookupInfo(name, subjects) {
+    if (subjects && subjects[name]) return subjects[name];
+    if (SEED_SUBJECTS[name]) return SEED_SUBJECTS[name];
+    const kyoyo = SEED_KYOYO[normalizeName(name)];
+    return kyoyo ? { major: '教養', minor: kyoyo[0], credits: kyoyo[1] } : null;
+}
+function findOffering(name, quarter, day, period) {
+    return (SEED_OFFERINGS[name] || []).find((o) => o[0] === quarter && o[1] === day && o[2] === period);
+}
+
+// 保存済みのデータを直す(一度だけ)
+// ・1年1Qを履修登録どおりにする(1〜5限。放課後の予定と時間外はそのまま)
+// ・科目ではない「機械系オンライン」を消し、「生活社会と法」を正しい名前「社会生活と法」に直す
+// ・便覧の教養科目は全角・半角を正しい名前にそろえて区分を付け、開講しているコマなら教員・教室も入れる
+// ・2Qの健康・スポーツ科学講義A・社会と人権B(オンデマンド)を入れ、線形代数3・4は2年の再履修クラスにする
+function migrateV13() {
+    if (localStorage.getItem('migratedV13')) return;
+    if (typeof SEED_KYOYO === 'undefined') return;   // 古い seed.js が読み込まれたときは次回に回す
+    const subjects = JSON.parse(localStorage.getItem('subjects') || '{}');
+    const RENAME = { '生活社会と法': '社会生活と法' };
+    const REMOVE = ['機械系オンライン'];
+
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
+    keys.filter((k) => /^cell-.*-subject$/.test(k)).forEach((key) => {
+        const prefix = key.slice(0, -'subject'.length);
+        const name = (localStorage.getItem(key) || '').trim();
+        if (!name) return;
+        if (REMOVE.includes(normalizeName(name))) {
+            FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+            return;
+        }
+        let fixed = RENAME[normalizeName(name)] || name;
+        if (!SEED_SUBJECTS[fixed] && SEED_KYOYO[normalizeName(fixed)]) fixed = normalizeName(fixed);
+        if (fixed !== name) localStorage.setItem(key, fixed);
+        if (!subjects[fixed]) {
+            const info = lookupInfo(fixed, null);
+            if (info) subjects[fixed] = { ...info, failed: subjects[name] && subjects[name].failed };
+        }
+        const m = key.match(/^cell-(\d)-(\d)-(.+)-(.+)-subject$/);
+        const offering = m && findOffering(fixed, Number(m[2]), m[3], Number(m[4]));
+        if (offering) {
+            if (!(localStorage.getItem(prefix + 'teacher') || '').trim()) localStorage.setItem(prefix + 'teacher', offering[3]);
+            if (!(localStorage.getItem(prefix + 'room') || '').trim()) localStorage.setItem(prefix + 'room', offering[4]);
+        }
+    });
+    REMOVE.forEach((name) => delete subjects[name]);
+    Object.keys(RENAME).forEach((name) => delete subjects[name]);
+
+    // 1年1Qは履修登録画面と同じにする(登録していないコマに入っている授業は消す。予定は残す)
+    DAYS.forEach((day) => {
+        [1, 2, 3, 4, 5].forEach((period) => {
+            const prefix = `cell-1-1-${day}-${period}-`;
+            const official = SEED_CELLS.find((c) => c.year === 1 && c.quarter === 1 && c.day === day && c.period === period);
+            const current = (localStorage.getItem(prefix + 'subject') || '').trim();
+            if (official) {
+                FIELDS.forEach((field) => localStorage.setItem(prefix + field, official[field]));
+                if (!subjects[official.subject]) subjects[official.subject] = SEED_SUBJECTS[official.subject];
+            } else if (current && !(subjects[current] && subjects[current].major === '予定')) {
+                FIELDS.forEach((field) => localStorage.removeItem(prefix + field));
+            }
+        });
+    });
+
+    // 2Qの健康・スポーツ科学講義A、2年の線形代数3・4(再履修)は教養教育院の時間割どおりに上書きする
+    SEED_CELLS.filter((c) => c.day !== EXTRA_DAY && (c.subject === '健康・スポーツ科学講義A'
+        || (c.year === 2 && ['線形代数3', '線形代数4'].includes(c.subject)))).forEach((cell) => {
+        const prefix = `cell-${cell.year}-${cell.quarter}-${cell.day}-${cell.period}-`;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    SEED_CELLS.filter((c) => c.day === EXTRA_DAY && c.subject === '社会と人権B').forEach((cell) => {
+        if (extraEntries(cell.year, cell.quarter).some((e) => normalizeName(e.subject).startsWith('社会と人権'))) return;
+        const prefix = `cell-${cell.year}-${cell.quarter}-${EXTRA_DAY}-${nextExtraPeriod(cell.year, cell.quarter)}-`;
+        FIELDS.forEach((field) => localStorage.setItem(prefix + field, cell[field]));
+    });
+    ['健康・スポーツ科学講義A', '社会と人権B', '初年次セミナー（機械工学）'].forEach((name) => {
+        subjects[name] = { ...SEED_SUBJECTS[name], failed: subjects[name] && subjects[name].failed };
+    });
+    localStorage.setItem('subjects', JSON.stringify(subjects));
+    localStorage.setItem('migratedV13', '1');
+}
+migrateV13();
+
 // 授業のあるクォーターが決まっている科目が、別のクォーターに入っていないか調べる
 // 時間割表(seed.js)にある科目はそのクォーター、番号付きの語学・数学は番号から決まるクォーターと比べる
 // 再履修クラスは別のクォーターにあるので、番号から決まるクォーターと時間割表のクォーターの両方を認める
@@ -409,14 +493,35 @@ function expectedQuarters(name) {
     if (numbered) expected.add(Number(numbered[2]));
     return expected.size ? expected : null;
 }
-function quarterWarning(name, quarter) {
+function quarterWarning(name, quarter, day, period) {
     const subject = normalizeName(name);
     if (/^AcademicEnglish/.test(subject) && !/^AcademicEnglish(Communication|Literacy)[AB][12]$/.test(subject)) {
         return 'Academic English は A1(1Q)・A2(2Q)・B1(3Q)・B2(4Q) の4つだけです';
     }
+    // 開講コマが分かっている教養科目は、曜日・時限まで合っているかを見る
+    const offerings = SEED_OFFERINGS[subject];
+    if (offerings && day !== EXTRA_DAY && !findOffering(subject, quarter, day, Number(period))) {
+        return `この時間には開講されていません（開講: ${offerings.map((o) => `${o[0]}Q${o[1]}${o[2]}`).join('・')}）`;
+    }
     const expected = expectedQuarters(name);
     if (!expected || expected.has(quarter)) return '';
     return `この科目は ${[...expected].sort().map((q) => `${q}Q`).join('・')} の授業です`;
+}
+
+// 区分が分からない科目名に、便覧・時間割表の似た科目名を出す(2文字ずつの重なりで比べる)
+function similarNames(name) {
+    const pairs = (s) => new Set([...Array(Math.max(s.length - 1, 1)).keys()].map((i) => s.slice(i, i + 2)));
+    const a = pairs(normalizeName(name));
+    return [...new Set([...Object.keys(SEED_KYOYO), ...Object.keys(SEED_SUBJECTS)])]
+        .map((candidate) => {
+            const b = pairs(candidate);
+            const common = [...a].filter((p) => b.has(p)).length;
+            return { candidate, score: (2 * common) / (a.size + b.size) };
+        })
+        .filter((c) => c.score >= 0.4)
+        .sort((x, y) => y.score - x.score)
+        .slice(0, 3)
+        .map((c) => c.candidate);
 }
 function findQuarterMistakes() {
     const mistakes = [];
@@ -426,7 +531,7 @@ function findQuarterMistakes() {
         if (!m) continue;
         const name = (localStorage.getItem(key) || '').trim();
         if (!name || (subjects[name] && subjects[name].major === '予定')) continue;
-        const warning = quarterWarning(name, Number(m[2]));
+        const warning = quarterWarning(name, Number(m[2]), m[3], m[4]);
         if (warning) mistakes.push(`${m[1]}年${m[2]}Q ${m[3]}${m[3] === EXTRA_DAY ? '' : '曜'}：${name}（${warning}）`);
     }
     return mistakes;
@@ -668,7 +773,7 @@ majorSelect.addEventListener('change', () => {
 });
 
 function showSubjectInfo(name, defaults) {
-    const info = subjects[name] || defaults || { major: '専門', minor: '選択', credits: 1 };
+    const info = lookupInfo(name, subjects) || defaults || { major: '専門', minor: '選択', credits: 1 };
     majorSelect.value = info.major;
     fillOptions(minorSelect, CATEGORIES[info.major]);
     minorSelect.value = info.minor;
@@ -679,13 +784,13 @@ function showSubjectInfo(name, defaults) {
 // 登録済みの科目名を選んだら区分・単位も合わせる
 subjectInput.addEventListener('change', () => {
     const name = subjectInput.value.trim();
-    if (subjects[name]) showSubjectInfo(name);
+    if (lookupInfo(name, subjects)) showSubjectInfo(name);
 });
 // 入力中の科目が別のクォーターの授業なら、その場で注意を出す
 function updateQuarterWarning() {
     const warning = document.getElementById('dialog-warning');
     const name = subjectInput.value.trim();
-    const text = name && editing ? quarterWarning(name, editing.quarter) : '';
+    const text = name && editing ? quarterWarning(name, editing.quarter, editing.day, editing.period) : '';
     warning.textContent = text ? `⚠ ${text}` : '';
     warning.hidden = !text;
 }
@@ -885,6 +990,31 @@ function registeredCredits(year) {
     return total;
 }
 
+// その学年までに取れた単位(落とした科目・予定は除き、同じ科目は1回だけ数える)
+function earnedCreditsUpTo(maxYear) {
+    const names = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+        const m = localStorage.key(i).match(/^cell-(\d)-.*-subject$/);
+        if (!m || Number(m[1]) > maxYear) continue;
+        const name = (localStorage.getItem(localStorage.key(i)) || '').trim();
+        if (name) names.add(name);
+    }
+    let total = 0;
+    names.forEach((name) => {
+        const info = subjects[name];
+        if (info && info.major !== '予定' && !info.failed) total += info.credits;
+    });
+    return total;
+}
+// その学年までに配当されている必修科目(時間割表と便覧の◎)
+function requiredNamesUpTo(maxYear) {
+    const names = SEED_CELLS
+        .filter((c) => c.year <= maxYear && SEED_SUBJECTS[c.subject]
+            && ['必修◎', '共通専門基礎(必修)'].includes(SEED_SUBJECTS[c.subject].minor))
+        .map((c) => c.subject);
+    return [...new Set(names)];
+}
+
 function makeRequirementRow(row) {
     const div = document.createElement('div');
     const done = row.value >= row.need;
@@ -995,7 +1125,7 @@ function renderSummary() {
 
     const mistakes = findQuarterMistakes();
     if (mistakes.length) {
-        const warn = makeSection(`⚠ 入れるクォーターが違う可能性がある科目　${mistakes.length}件`);
+        const warn = makeSection(`⚠ 入れるクォーター・コマが違う可能性がある科目　${mistakes.length}件`);
         warn.classList.add('warning-section');
         mistakes.forEach((text) => {
             const p = document.createElement('p');
@@ -1009,9 +1139,33 @@ function renderSummary() {
     document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0 || overCap);
 
     if (credits.unclassified.length) {
-        const un = makeSection('区分が未設定の科目（単位に数えていません）', credits.unclassified.join('、'));
+        const un = makeSection('区分が未設定の科目（単位に数えていません）',
+            '科目名が便覧と違うと区分が分かりません。似た科目名があれば下に出します');
+        credits.unclassified.forEach((name) => {
+            const p = document.createElement('p');
+            p.className = 'req-desc';
+            const similar = similarNames(name);
+            p.textContent = similar.length ? `${name} → もしかして: ${similar.join('・')}` : name;
+            un.appendChild(p);
+        });
         container.appendChild(un);
     }
+
+    // 早期履修(上の学年の科目を早めに取る)の条件。便覧に2年・3年への進級条件はないので参考として出す
+    const early = makeSection('参考：早期履修の条件（工学部 早期履修に関する内規）',
+        '2年・3年への進級条件は便覧にありません。これは上の学年の科目を早めに履修するための条件です。成績（90%以上が秀・優）はこのアプリでは確かめられません');
+    [[1, 40, '2年次生'], [2, 80, '3年次生']].forEach(([upTo, need, label]) => {
+        early.appendChild(makeRequirementRow({ label: `${label}：${upTo === 1 ? '1年次' : '2年次まで'}に修得した単位`, value: earnedCreditsUpTo(upTo), need }));
+        const missing = requiredNamesUpTo(upTo).filter((name) => !credits.earnedNames.has(name));
+        early.appendChild(makeRequirementRow({
+            label: `${label}：${upTo === 1 ? '1年次' : '1・2年次'}に配当の必修科目をすべて`,
+            value: requiredNamesUpTo(upTo).length - missing.length,
+            need: requiredNamesUpTo(upTo).length,
+            unit: '科目',
+            note: missing.length ? `未修得: ${missing.join('、')}` : ''
+        }));
+    });
+    container.appendChild(early);
 
     document.getElementById('total-credits').textContent = total;
 }
