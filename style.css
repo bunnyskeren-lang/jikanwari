@@ -6,7 +6,6 @@
     --line: #dde1e7;
     --accent: #1f3a5f;
     --accent-soft: #e3ebf6;
-    --today: #fff6d6;
     --danger: #c0392b;
 
     --c-common: #dbeafe;   --c-common-bar: #3b82f6;
@@ -29,7 +28,6 @@
         --line: #2e3442;
         --accent: #8fb4e8;
         --accent-soft: #24324a;
-        --today: #3a3420;
         --danger: #ff7b6e;
 
         --c-common: #1e3350;
@@ -221,11 +219,6 @@ th {
     color: var(--muted);
     padding: 4px 0;
 }
-th.today {
-    color: var(--text);
-    background: var(--today);
-    border-radius: 6px;
-}
 th.period {
     width: 34px;
     padding: 0;
@@ -249,9 +242,6 @@ td {
     padding: 0;
     height: 84px;
     vertical-align: top;
-}
-td.today .cell.empty {
-    background: var(--today);
 }
 .cell {
     display: flex;

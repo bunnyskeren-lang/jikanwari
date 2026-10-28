@@ -699,7 +699,6 @@ function buildCell(year, quarter, day, period) {
 function renderTimetable() {
     const table = document.getElementById('timetable');
     table.innerHTML = '';
-    const today = DAYS[new Date().getDay() - 1];
 
     // 見出し行(曜日)
     const headerRow = document.createElement('tr');
@@ -707,7 +706,6 @@ function renderTimetable() {
     DAYS.forEach((day) => {
         const th = document.createElement('th');
         th.textContent = day;
-        if (day === today) th.className = 'today';
         headerRow.appendChild(th);
     });
     table.appendChild(headerRow);
@@ -728,9 +726,7 @@ function renderTimetable() {
         tr.appendChild(th);
 
         DAYS.forEach((day) => {
-            const td = buildCell(view.year, view.quarter, day, period);
-            if (day === today) td.classList.add('today');
-            tr.appendChild(td);
+            tr.appendChild(buildCell(view.year, view.quarter, day, period));
         });
         table.appendChild(tr);
     });
