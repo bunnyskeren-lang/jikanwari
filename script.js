@@ -1179,8 +1179,6 @@ function renderSummary() {
     }
     container.appendChild(fail);
 
-    container.appendChild(makeTransferCard());
-
     document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0 || overCap);
     document.getElementById('total-credits').textContent = total;
 }
@@ -1192,79 +1190,6 @@ document.getElementById('summary-toggle').addEventListener('click', () => {
     document.getElementById('summary').scrollTop = 0;
 });
 document.getElementById('summary-close').addEventListener('click', () => summaryDialog.close());
-
-// スマホ⇔パソコンでデータを移す
-// 時間割は端末ごとのブラウザに保存されるので、文字にして送り、もう一方で貼り付けて読み込む
-// (同じ github.io の別のページのデータは混ぜないよう、このアプリのキーだけを扱う)
-const TRANSFER_APP = 'jikanwari';
-function isAppKey(key) {
-    return /^cell-/.test(key) || /^migratedV\d+$/.test(key)
-        || ['subjects', 'view', 'showFailed', 'seededKikai2026'].includes(key);
-}
-function exportData() {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (isAppKey(key)) data[key] = localStorage.getItem(key);
-    }
-    return JSON.stringify({ app: TRANSFER_APP, version: 1, exportedAt: new Date().toISOString(), data });
-}
-function importData(text) {
-    const parsed = JSON.parse(text);
-    if (!parsed || parsed.app !== TRANSFER_APP || typeof parsed.data !== 'object') {
-        throw new Error('このアプリのデータではありません');
-    }
-    const keys = [];
-    for (let i = 0; i < localStorage.length; i++) keys.push(localStorage.key(i));
-    keys.filter(isAppKey).forEach((key) => localStorage.removeItem(key));
-    Object.entries(parsed.data).forEach(([key, value]) => {
-        if (isAppKey(key)) localStorage.setItem(key, value);
-    });
-}
-function makeTransferCard() {
-    const card = makeCard('データをほかの端末に移す', '', false);
-    card.appendChild(makeFootnote('時間割は端末ごとに保存されています。移したい端末で「データをコピー」→ LINEなどでもう一方の端末に送る → そちらで貼り付けて「読み込む」'));
-
-    const copy = document.createElement('button');
-    copy.className = 'toggle';
-    copy.textContent = 'データをコピー';
-    const copyResult = makeFootnote('');
-    copy.addEventListener('click', async () => {
-        const text = exportData();
-        try {
-            await navigator.clipboard.writeText(text);
-            copyResult.textContent = 'コピーしました。LINEなどに貼り付けて、もう一方の端末に送ってください';
-        } catch (e) {
-            // コピーできないときは文字を出すので、長押しで全部選んでコピーしてもらう
-            area.value = text;
-            copyResult.textContent = 'コピーできなかったので、下の欄の文字を全部選んでコピーしてください';
-        }
-    });
-    card.appendChild(copy);
-    card.appendChild(copyResult);
-
-    const area = document.createElement('textarea');
-    area.className = 'transfer-area';
-    area.placeholder = 'ここに送られてきたデータを貼り付ける';
-    card.appendChild(area);
-
-    const load = document.createElement('button');
-    load.className = 'toggle';
-    load.textContent = '貼り付けたデータを読み込む';
-    const loadResult = makeFootnote('');
-    load.addEventListener('click', () => {
-        try {
-            if (!confirm('この端末の時間割を、貼り付けたデータで置き換えます。よろしいですか？')) return;
-            importData(area.value.trim());
-            location.reload();
-        } catch (e) {
-            loadResult.textContent = `読み込めませんでした（${e.message}）。コピーした文字を全部貼り付けたか確かめてください`;
-        }
-    });
-    card.appendChild(load);
-    card.appendChild(loadResult);
-    return card;
-}
 
 function renderLegend() {
     const legend = document.getElementById('legend');
