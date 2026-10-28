@@ -946,7 +946,6 @@ function calcRequirements({ earned, earnedNames }) {
         { label: '基盤系', value: sum('基盤系'), need: 4 },
         {
             label: '人文・社会・自然・総合系',
-            note: '自然系と総合系は合わせて4単位まで',
             value: sum('人文系', '社会系') + Math.min(sum('自然系', '総合系'), 4),
             need: 12
         },
@@ -956,10 +955,10 @@ function calcRequirements({ earned, earnedNames }) {
     ];
     const graduation = [
         ...kyoyo,
-        { label: '専門科目＋全学共通の選択科目', value: senmon, need: 102 },
+        { label: '専門＋全学共通の選択', value: senmon, need: 102 },
         { label: '共通専門基礎の必修', value: commonRequired, need: 4, depth: 1 },
         { label: '機械工学科専門科目', value: kikai, need: 83, depth: 1 },
-        { label: '必修◎（卒業研究10単位を含む）', value: hisshu, need: 38, depth: 2 },
+        { label: '必修◎（卒業研究を含む）', value: hisshu, need: 38, depth: 2 },
         { label: '選択必修○', value: maru, need: 12, depth: 2 },
         { label: '選択必修△', value: sankaku, need: 4, depth: 2 }
     ];
@@ -968,26 +967,25 @@ function calcRequirements({ earned, earnedNames }) {
     const labMissing = LAB_REQUIRED.filter((name) => !earnedNames.has(name));
     const thesis = [
         {
-            label: '教養科目の卒業に必要な単位をすべて',
+            label: '教養の卒業要件をすべて',
             value: kyoyo.reduce((s, r) => s + Math.min(r.value, r.need), 0),
             need: kyoyo.reduce((s, r) => s + r.need, 0)
         },
         {
-            label: '実験・実習・演習区分の必修科目をすべて',
+            label: '実験・実習・演習の必修',
             value: LAB_REQUIRED.length - labMissing.length,
             need: LAB_REQUIRED.length,
             unit: '科目',
             note: labMissing.length ? `未修得: ${labMissing.join('、')}` : ''
         },
-        { label: '必修◎', note: '共通専門基礎の必修を含む', value: hisshu + commonRequired, need: 28 },
+        { label: '必修◎（共通専門基礎を含む）', value: hisshu + commonRequired, need: 28 },
         {
             label: '必修◎＋選択必修○△',
-            note: '○は12単位、△は4単位まで',
             value: hisshu + commonRequired + Math.min(maru, 12) + Math.min(sankaku, 4),
             need: 42
         },
         { label: '機械工学科専門科目', value: kikai, need: 61 },
-        { label: '専門科目＋全学共通の選択科目', value: senmon, need: 78 }
+        { label: '専門＋全学共通の選択', value: senmon, need: 78 }
     ];
     return { graduation, total, thesis };
 }
@@ -1014,44 +1012,24 @@ function registeredCredits(year) {
     return total;
 }
 
-// 1行分: 左から「✓/●」「項目名」「取った / 必要」を続けて並べ、その下に短いバーと「あと○単位」を出す
-// (左右の端に分けると視線が行き来して読みにくいので、すべて左に寄せる)
+// 1行分: 「✓/●」「項目名」「取った / 必要」「あと○」を1行に続けて並べる
+// (左右の端に分けると視線が行き来し、バーを付けると縦に長くなるので、どちらもしない)
 function makeRequirementRow(row) {
     const unit = row.unit || '単位';
     const done = row.value >= row.need;
     const div = document.createElement('div');
     div.className = `req-row depth-${row.depth || 0}${done ? ' done' : ''}`;
-
-    const line = document.createElement('div');
-    line.className = 'req-line';
-    const icon = document.createElement('span');
-    icon.className = 'req-icon';
-    icon.textContent = done ? '✓' : '●';
-    const label = document.createElement('span');
-    label.className = 'req-label';
-    label.textContent = row.label;
-    const value = document.createElement('span');
-    value.className = 'req-value';
-    value.textContent = `${row.value} / ${row.need}${unit}`;
-    line.appendChild(icon);
-    line.appendChild(label);
-    line.appendChild(value);
-    div.appendChild(line);
-
-    const sub = document.createElement('div');
-    sub.className = 'req-sub';
-    const bar = document.createElement('div');
-    bar.className = 'req-bar';
-    const fill = document.createElement('div');
-    fill.style.width = `${Math.min(100, (row.value / row.need) * 100)}%`;
-    bar.appendChild(fill);
-    const badge = document.createElement('span');
-    badge.className = 'req-badge';
-    badge.textContent = done ? '' : `あと${row.need - row.value}${unit}`;
-    sub.appendChild(bar);
-    sub.appendChild(badge);
-    div.appendChild(sub);
-
+    [
+        ['req-icon', done ? '✓' : '●'],
+        ['req-label', row.label],
+        ['req-value', `${row.value}/${row.need}`],
+        ['req-badge', done ? '' : `あと${row.need - row.value}${unit === '単位' ? '' : unit}`]
+    ].forEach(([cls, text]) => {
+        const span = document.createElement('span');
+        span.className = cls;
+        span.textContent = text;
+        div.appendChild(span);
+    });
     if (row.note) {
         const note = document.createElement('div');
         note.className = 'req-note';
@@ -1092,37 +1070,14 @@ function makeFootnote(text) {
     p.textContent = text;
     return p;
 }
-function makeOverview(label, big, sub, className) {
-    const div = document.createElement('div');
-    div.className = `overview ${className || ''}`;
-    [['overview-label', label], ['overview-big', big], ['overview-sub', sub]].forEach(([cls, text]) => {
-        const el = document.createElement('div');
-        el.className = cls;
-        el.textContent = text;
-        div.appendChild(el);
-    });
-    return div;
-}
-
 function renderSummary() {
     const container = document.getElementById('summary');
     container.innerHTML = '';
 
     const credits = collectCredits();
     const { graduation, total, thesis } = calcRequirements(credits);
-    const capNow = registeredCredits(view.year);
     const mistakes = findQuarterMistakes();
     const overCap = YEARS.some((year) => registeredCredits(year) > CAP_PER_YEAR);
-
-    // いちばん上に大きく: 卒業まであと何単位か・表示中の学年のCAP
-    const overview = document.createElement('div');
-    overview.className = 'overview-grid';
-    overview.appendChild(makeOverview('卒業まで', `${total} / 127`,
-        total >= 127 ? '✓ 単位は足りています' : `あと${127 - total}単位`, total >= 127 ? 'good' : ''));
-    overview.appendChild(makeOverview(`${view.year}年の登録（CAP）`, `${capNow} / ${CAP_PER_YEAR}`,
-        capNow > CAP_PER_YEAR ? `⚠ ${capNow - CAP_PER_YEAR}単位オーバー` : `あと${CAP_PER_YEAR - capNow}単位登録できる`,
-        capNow > CAP_PER_YEAR ? 'bad' : ''));
-    container.appendChild(overview);
 
     if (mistakes.length) {
         const warn = makeCard('⚠ 入れる場所が違うかもしれない科目', `${mistakes.length}件`, true, 'bad');
@@ -1148,7 +1103,7 @@ function renderSummary() {
     graduation.slice(0, senmonStart).forEach((row) => grad.appendChild(makeRequirementRow(row)));
     grad.appendChild(makeGroupTitle('専門'));
     graduation.slice(senmonStart).forEach((row) => grad.appendChild(makeRequirementRow(row)));
-    grad.appendChild(makeFootnote('時間割の科目は単位を取れたものとして数えています（落とした科目は除く）'));
+    grad.appendChild(makeFootnote('時間割の科目は単位を取れたものとして数えています（落とした科目は除く）。自然系と総合系は合わせて4単位まで'));
     container.appendChild(grad);
 
     const cap = makeCard(`履修登録の上限（1年間${CAP_PER_YEAR}単位）`, overCap ? '⚠ 超過あり' : '✓ 上限内', false, overCap ? 'bad' : 'good');
@@ -1159,7 +1114,7 @@ function renderSummary() {
         row.classList.remove('done');
         row.querySelector('.req-icon').textContent = registered > CAP_PER_YEAR ? '⚠' : '';
         row.querySelector('.req-badge').textContent = registered > CAP_PER_YEAR
-            ? `${registered - CAP_PER_YEAR}単位オーバー` : `あと${CAP_PER_YEAR - registered}単位登録できる`;
+            ? `${registered - CAP_PER_YEAR}オーバー` : `あと${CAP_PER_YEAR - registered}`;
         if (registered > CAP_PER_YEAR) row.classList.add('over');
         cap.appendChild(row);
     });
@@ -1169,7 +1124,7 @@ function renderSummary() {
     const thesisLeft = thesis.filter((r) => r.value < r.need).length;
     const th = makeCard('4年で卒業研究に着手する条件', thesisLeft ? `${thesisLeft}項目が未達成` : '✓ すべて達成', false, thesisLeft ? '' : 'good');
     thesis.forEach((row) => th.appendChild(makeRequirementRow(row)));
-    th.appendChild(makeFootnote('機械工学科内規'));
+    th.appendChild(makeFootnote('機械工学科内規。○は12単位、△は4単位まで数える'));
     container.appendChild(th);
 
     // 落とした単位は人に見られたくないので、トグルをオンにしたときだけ中身を出す
