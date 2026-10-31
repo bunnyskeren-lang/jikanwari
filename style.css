@@ -16,7 +16,7 @@
     --c-general: #fbe4f1;  --c-general-bar: #c8559a;
     --c-language: #d7f3f1; --c-language-bar: #1f9e95;
     --c-elective-b: #fff1c2; --c-elective-b-bar: #c99a12;
-    --c-kiso: #e3e4fb;     --c-kiso-bar: #5b5fd6;
+    --c-kiso: #ecf8d0;     --c-kiso-bar: #6b9e12;
     --c-plan: #f1ece4;     --c-plan-bar: #8a6a3f;
     --c-none: #eceff3;     --c-none-bar: #9aa3af;
 }
@@ -40,7 +40,7 @@
         --c-language: #17403d;
         --c-plan: #3a3226;
         --c-elective-b: #3f3514;
-        --c-kiso: #2a2c55;
+        --c-kiso: #2e3a14;
         --c-none: #2a2f39;
     }
 }
@@ -269,9 +269,6 @@ h1 {
     content: "⚠ ";
     color: var(--danger);
 }
-.failed-row {
-    color: var(--danger);
-}
 .tabs {
     display: flex;
     gap: 6px;
@@ -375,29 +372,6 @@ td {
     -webkit-box-orient: vertical;
     overflow: hidden;
     word-break: break-all;
-}
-/* 単位を落とした科目 */
-.cell.failed,
-.extra-item.failed {
-    outline: 2px solid var(--danger);
-    outline-offset: -2px;
-}
-.cell.failed .cell-subject,
-.extra-item.failed .extra-subject {
-    text-decoration: line-through;
-    color: var(--danger);
-}
-.toggle {
-    margin: 2px 0 6px;
-    padding: 6px 12px;
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    background: var(--surface);
-    font-size: 12px;
-}
-.toggle[aria-checked="true"] {
-    border-color: var(--danger);
-    color: var(--danger);
 }
 
 .nowrap {

@@ -639,16 +639,6 @@ function makeTab(label, active, onClick) {
     return btn;
 }
 
-function isFailed(name) {
-    return Boolean(subjects[name] && subjects[name].failed);
-}
-// 落単は人に見られたくないので、トグルをオンにしたときだけ表示する(初期値はオフ)
-function showFailed() {
-    return localStorage.getItem('showFailed') === '1';
-}
-function isFailedShown(name) {
-    return showFailed() && isFailed(name);
-}
 
 // 便覧の印(◎必修・○△選択必修)をコマの右上に出す
 const CATEGORY_MARK = { '共通専門基礎(必修)': '◎', '必修◎': '◎', '選択必修○': '○', '選択必修△': '△' };
@@ -677,7 +667,6 @@ function buildCell(year, quarter, day, period) {
     btn.setAttribute('aria-label', `${day}曜${period}${typeof period === 'number' ? '限' : ''} ${cell.subject || '空き'}`);
     if (cell.subject) {
         btn.classList.add(categoryClass(cell.subject));
-        if (isFailedShown(cell.subject)) btn.classList.add('failed');
         const mark = makeMark(cell.subject);
         if (mark) btn.appendChild(mark);
         const name = document.createElement('span');
@@ -758,7 +747,7 @@ function renderExtra() {
     extraEntries(view.year, view.quarter).forEach((entry) => {
         const cell = readCell(view.year, view.quarter, EXTRA_DAY, entry.period);
         const btn = document.createElement('button');
-        btn.className = `extra-item ${categoryClass(cell.subject)}${isFailedShown(cell.subject) ? ' failed' : ''}`;
+        btn.className = `extra-item ${categoryClass(cell.subject)}`;
         const name = document.createElement('span');
         name.className = 'extra-subject';
         name.textContent = cell.subject;
@@ -1147,38 +1136,6 @@ function renderSummary() {
     th.appendChild(makeFootnote('機械工学科内規。○は12単位、△は4単位まで数える'));
     container.appendChild(th);
 
-    // 落とした単位は人に見られたくないので、トグルをオンにしたときだけ中身を出す
-    const fail = makeCard('落とした単位', showFailed()
-        ? `${credits.failed.reduce((s, f) => s + f.credits, 0)}単位` : '非表示', false);
-    fail.classList.add('fail-card');
-    const toggle = document.createElement('button');
-    toggle.className = 'toggle';
-    toggle.setAttribute('role', 'switch');
-    toggle.setAttribute('aria-checked', String(showFailed()));
-    toggle.textContent = showFailed() ? '表示中（タップで隠す）' : '隠しています（タップで表示）';
-    toggle.addEventListener('click', () => {
-        localStorage.setItem('showFailed', showFailed() ? '0' : '1');
-        refresh();
-        document.querySelector('.fail-card').open = true;
-    });
-    fail.appendChild(toggle);
-    if (showFailed() && credits.failed.length) {
-        credits.failed.forEach((f) => {
-            const row = document.createElement('div');
-            row.className = 'summary-row failed-row';
-            const name = document.createElement('span');
-            name.textContent = f.name;
-            const value = document.createElement('span');
-            value.textContent = `${f.major}・${f.minor}　${f.credits}単位`;
-            row.appendChild(name);
-            row.appendChild(value);
-            fail.appendChild(row);
-        });
-    } else if (showFailed()) {
-        fail.appendChild(makeFootnote('なし（コマの編集画面で「単位を落とした」にチェックすると、ここに出ます）'));
-    }
-    container.appendChild(fail);
-
     document.getElementById('summary-toggle').classList.toggle('has-warning', mistakes.length > 0 || overCap);
     document.getElementById('total-credits').textContent = total;
 }
@@ -1217,36 +1174,6 @@ main.addEventListener('touchend', (e) => {
     const index = (view.year - 1) * 4 + (view.quarter - 1) + (dx < 0 ? 1 : -1);
     if (index < 0 || index >= YEARS.length * QUARTERS.length) return;
     setView(Math.floor(index / 4) + 1, (index % 4) + 1);
-});
-
-// 保存している時間割を JSON に書き出す(PC の tools\phone-import が録音の振り分けに使う)
-function collectAllCells() {
-    const cells = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const m = localStorage.key(i).match(/^cell-(\d)-(\d)-(.+)-(.+)-subject$/);
-        if (!m) continue;
-        const [, year, quarter, day, period] = m;
-        const cell = readCell(year, quarter, day, period);
-        if (!cell.subject) continue;
-        cells.push({ year: Number(year), quarter: Number(quarter), day,
-            period: /^\d+$/.test(period) ? Number(period) : period, ...cell });
-    }
-    return cells.sort((a, b) => a.year - b.year || a.quarter - b.quarter
-        || DAYS.indexOf(a.day) - DAYS.indexOf(b.day) || String(a.period).localeCompare(String(b.period)));
-}
-document.getElementById('export-button').addEventListener('click', async () => {
-    const data = { app: 'jikanwari', exportedAt: new Date().toISOString(), cells: collectAllCells(), subjects };
-    const file = new File([JSON.stringify(data, null, 1)], '時間割.json', { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file] }); } catch (e) { /* 共有をキャンセルしたとき */ }
-        return;
-    }
-    // 共有できないブラウザ(PC など)はダウンロードにする
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(file);
-    link.download = file.name;
-    link.click();
-    URL.revokeObjectURL(link.href);
 });
 
 function refresh() {
